@@ -1,2 +1,18 @@
-# chit-chat-server
-BackEnd server for Chit-Chat messaging app.
+# Chit-Chat Server
+> BackEnd server for Chit-Chat messaging app. Refer: https://github.com/regex5440/chit-chat
+
+## BackEnd Stack
+- Node.Js + Express.Js
+- MongoDB
+- Socket.io
+- JWT
+
+## Node Version
+> `v18.14.0`
+
+## Available Script
+`npm start`
+> Start the server using nodemon and watch for changes
+
+`npm run static`
+> Start the server script without watching file changes.
