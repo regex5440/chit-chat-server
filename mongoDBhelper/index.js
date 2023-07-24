@@ -1,9 +1,13 @@
 import { config } from "dotenv";
 config();
 import { MongoClient, ObjectId } from "mongodb";
-import { ProfileDataProjection } from "../mongodb_helpers.js";
+import { ProfileDataProjection } from "./projections.js";
 
-export const mongoDbClient = new MongoClient(`mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(process.env.DB_PassWord)}@cluster0.qsbznrs.mongodb.net/?retryWrites=true&w=majority`);
+export const mongoDbClient = new MongoClient(
+  `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
+    process.env.DB_PassWord
+  )}@cluster0.qsbznrs.mongodb.net/?retryWrites=true&w=majority`
+);
 const db = mongoDbClient.db("chit-chat");
 const chatsCollection = db.collection("chats"),
   usersCollection = db.collection("users");
@@ -14,7 +18,10 @@ const chatsCollection = db.collection("chats"),
  ?      User Profile
  */
 async function myProfile(userId) {
-  return await usersCollection.findOne({ _id: new ObjectId(userId) }, { projection: { _id: 0, ...ProfileDataProjection } });
+  return await usersCollection.findOne(
+    { _id: new ObjectId(userId) },
+    { projection: { _id: 0, ...ProfileDataProjection } }
+  );
 }
 
 //?   Login
@@ -35,7 +42,10 @@ async function verifyUser(username, password) {
 //?     Connections
 
 async function connectionsData(userId) {
-  const { connections } = await usersCollection.findOne({ _id: new ObjectId(userId) }, { projection: { _id: 0, connections: 1 } });
+  const { connections } = await usersCollection.findOne(
+    { _id: new ObjectId(userId) },
+    { projection: { _id: 0, connections: 1 } }
+  );
 
   const contactIds = Object.keys(connections).map((id) => new ObjectId(id));
   const contactsArray = await usersCollection
@@ -55,7 +65,9 @@ async function connectionsData(userId) {
     Object.assign(connections[contact.id], contact);
   });
 
-  const chatIds = Object.values(connections).map(({ chat_id }) => new ObjectId(chat_id));
+  const chatIds = Object.values(connections).map(
+    ({ chat_id }) => new ObjectId(chat_id)
+  );
 
   const chats = await chatsCollection //*  Providing chat data with last 20 messages
     .find(
