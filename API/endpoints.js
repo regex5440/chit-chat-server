@@ -13,22 +13,34 @@ const loginAuthentication = async (req, res) => {
     else if (!credentialsMatch)
       res.send("Username or Password is not correct!");
     else {
-      let token = generateNewToken({ userId });
+      let token = generateNewLoginToken({ userId });
       res.status(202).send({ token });
     }
   }
 };
 
-//Username Checker
-const userNameChecker = (req, res) => {
-  setTimeout(() => {
-    if (req.query.username && req.query.username === "harshdagar") {
-      //TODO: Check available username from the database
-      res.send({ available: false });
+//Signup Email authenticator
+const emailValidation = async (req, res) => {
+  const { emailAddress, code } = req.body;
+  if (!req.path.includes("code")) {
+    //TODO: Send an OTP Email to email address
+    const EmailDoesNotExists_AND_OTPCreated = true;
+    if (EmailDoesNotExists_AND_OTPCreated) {
+      res.send({ message: "ok", valid: true }); // Email does not already exists and OTP created
     } else {
-      res.send({ available: true });
+      res.send({ message: "Email already exists!", valid: false });
     }
-  }, 2000);
+  } else {
+    const approved = code == "123";
+    if (approved) {
+      res.json({
+        token: generateNewToken({ emailAddress }),
+        verified: true,
+      });
+    } else {
+      res.json({ verified: false });
+    }
+  }
 };
 
-export { loginAuthentication, userNameChecker };
+export { loginAuthentication, emailValidation };
