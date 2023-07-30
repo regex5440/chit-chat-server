@@ -2,7 +2,7 @@ import { config } from "dotenv";
 config();
 import jwt from "jsonwebtoken";
 
-function generateNewToken(data = {}, type = "signup") {
+function generateNewToken(data = {}, type = "login") {
   return jwt.sign(
     data,
     type === "login" ? process.env.TOKEN_KEY : process.env.SIGNUP_TOKEN_KEY,

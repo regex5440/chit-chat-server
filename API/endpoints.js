@@ -13,7 +13,7 @@ const loginAuthentication = async (req, res) => {
     else if (!credentialsMatch)
       res.send("Username or Password is not correct!");
     else {
-      let token = generateNewLoginToken({ userId });
+      let token = generateNewToken({ userId });
       res.status(202).send({ token });
     }
   }
@@ -34,7 +34,7 @@ const emailValidation = async (req, res) => {
     const approved = code == "123";
     if (approved) {
       res.json({
-        token: generateNewToken({ emailAddress }),
+        token: generateNewToken({ emailAddress }, "login"),
         verified: true,
       });
     } else {
