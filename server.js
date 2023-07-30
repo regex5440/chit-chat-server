@@ -3,7 +3,7 @@ import cors from "cors";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import { SOCKET_HANDLERS } from "./utils/enums.js";
-import { chatsCollection, mongoDbClient } from "./mongoDBhelper/index.js";
+import { chatsCollection, mongoDbClient } from "./MongoDB_Helper/index.js";
 import { ObjectId } from "mongodb";
 import { signupTokenAuthority, tokenAuthority } from "./API/middleware.js";
 import {

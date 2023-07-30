@@ -40,7 +40,6 @@ async function verifyUser(username, password) {
 }
 
 //?     Connections
-
 async function connectionsData(userId) {
   const { connections } = await usersCollection.findOne(
     { _id: new ObjectId(userId) },
@@ -88,5 +87,15 @@ async function connectionsData(userId) {
   return { connections, chats };
 }
 
-export { myProfile, connectionsData, verifyUser }; // Functions
+async function isUsernameAvailable(user_provided_username) {
+  const user = await usersCollection.findOne({
+    username: user_provided_username,
+  });
+  if (!user) {
+    return true;
+  }
+  return false;
+}
+
+export { myProfile, connectionsData, verifyUser, isUsernameAvailable }; // Functions
 export { chatsCollection, usersCollection }; // Collections

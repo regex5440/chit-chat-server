@@ -1,4 +1,8 @@
-import { connectionsData, myProfile } from "../../mongoDBhelper/index.js";
+import {
+  connectionsData,
+  isUsernameAvailable,
+  myProfile,
+} from "../../MongoDB_Helper/index.js";
 
 const userProfileData = async (req, res) => {
   console.log(req.userId, "userId");
@@ -26,14 +30,20 @@ const connectionProfileData = async function (req, res) {
 
 //Username Checker
 const userNameChecker = (req, res) => {
-  setTimeout(() => {
-    if (req.query.username && req.query.username === "harshdagar") {
-      //TODO: Check available username from the database
-      res.send({ available: false });
+  try {
+    if (req.query?.username) {
+      isUsernameAvailable(req.query.username).then((availability) => {
+        res.json({
+          available: availability,
+        });
+      });
     } else {
-      res.send({ available: true });
+      res.status(400).send("Invalid username check request");
     }
-  }, 2000);
+  } catch (e) {
+    console.log("FailedUsernameCheck:", e);
+    res.status(500).send("Please contact support!");
+  }
 };
 
 const imageHandler = (req, res) => {

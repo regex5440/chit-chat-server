@@ -27,10 +27,10 @@ const signupTokenAuthority = (req, res, next) => {
       authToken,
       (data) => {
         if (data) {
-          req.emailToken = data.emailAddress;
+          req.emailAddress = data.emailAddress;
           next();
         } else {
-          res.sendStatus(401);
+          res.status(401).send({ message: "Session Expired!" });
         }
       },
       "signup"

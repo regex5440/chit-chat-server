@@ -1,4 +1,4 @@
-import { verifyUser } from "../mongoDBhelper/index.js";
+import { verifyUser } from "../MongoDB_Helper/index.js";
 import { generateNewToken } from "../utils/jwt.js";
 
 //Login Page
@@ -34,7 +34,7 @@ const emailValidation = async (req, res) => {
     const approved = code == "123";
     if (approved) {
       res.json({
-        token: generateNewToken({ emailAddress }, "login"),
+        token: generateNewToken({ emailAddress }, "signup"),
         verified: true,
       });
     } else {
