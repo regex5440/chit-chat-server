@@ -26,7 +26,9 @@ async function myProfile(userId) {
 
 //?   Login
 async function verifyUser(username, password) {
-  const user = await usersCollection.findOne({ username });
+  const user = await usersCollection.findOne({
+    $or: [{ username }, { email: username }],
+  });
   const result = { userExists: false, credentialsMatch: false, userId: "" };
   if (user) {
     result.userExists = true;
@@ -97,5 +99,46 @@ async function isUsernameAvailable(user_provided_username) {
   return false;
 }
 
-export { myProfile, connectionsData, verifyUser, isUsernameAvailable }; // Functions
+async function isEmailAlreadyRegistered(email_address) {
+  const user = await usersCollection.findOne({ email: email_address });
+  if (user) {
+    return true;
+  }
+  return false;
+}
+
+async function createNewAccount({
+  firstName,
+  lastName,
+  email,
+  password,
+  username,
+  profile_picture_url,
+}) {
+  const newUser = await usersCollection.insertOne({
+    profile_type: "person",
+    firstName,
+    lastName,
+    status: "ONLINE",
+    avatar: {
+      url: profile_picture_url,
+    },
+    last_active: "",
+    connections: {},
+    email,
+    password,
+    username,
+  });
+  console.log(newUser);
+  return newUser;
+}
+
+export {
+  myProfile,
+  connectionsData,
+  verifyUser,
+  isUsernameAvailable,
+  isEmailAlreadyRegistered,
+  createNewAccount,
+}; // Functions
 export { chatsCollection, usersCollection }; // Collections

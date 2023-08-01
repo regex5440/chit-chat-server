@@ -5,4 +5,8 @@ const SOCKET_HANDLERS = {
   },
 };
 
-export { SOCKET_HANDLERS };
+const REGEXP = {
+  email: /^[\w.!#$%&'*+/=?^_`{|}~-]+@[\w-]+(\.[\w-]+)+$/,
+};
+
+export { SOCKET_HANDLERS, REGEXP };

@@ -12,6 +12,10 @@ function generateNewToken(data = {}, type = "login") {
   );
 }
 
+function generateLoginToken(userId) {
+  return generateNewToken({ userId });
+}
+
 function validateToken(token, callback, type = "login") {
   jwt.verify(
     token,
@@ -26,4 +30,4 @@ function validateToken(token, callback, type = "login") {
   );
 }
 
-export { generateNewToken, validateToken };
+export { generateNewToken, generateLoginToken, validateToken };

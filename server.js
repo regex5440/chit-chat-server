@@ -11,6 +11,7 @@ import {
   userProfileData,
   userNameChecker,
   imageHandler,
+  registerUser,
 } from "./API/Authenticated/api_endpoints.js";
 import { emailValidation, loginAuthentication } from "./API/endpoints.js";
 
@@ -28,10 +29,18 @@ expressApp.use(express.json());
 
 expressApp.use("/email_verifier", emailValidation);
 
+//! TEST API BELOW
+// expressApp.get('/',(req,res)=>{
+// res.status(400).send()
+// })
+
+//! TEST API ABOVE
+
 //After email verification, use this API
 expressApp.use("/signup/api", signupTokenAuthority);
 expressApp.get("/signup/api/username_checker", userNameChecker);
 expressApp.use("/signup/api/imageUploader", imageHandler);
+expressApp.use("/signup/api/register", registerUser);
 
 // Login Endpoint
 expressApp.post("/login", loginAuthentication);
