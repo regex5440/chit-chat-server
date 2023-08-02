@@ -58,34 +58,28 @@ const imageHandler = (req, res) => {
 };
 
 const registerUser = async (req, res) => {
-  console.log("Request Received");
   try {
     if (Object.keys(req.body).length === 5) {
       const { usernameSelected, firstName, lastName, email, password } =
         req.body;
       const usernameAvailable = await isUsernameAvailable(usernameSelected);
-      console.log("Username checking");
-      if (usernameAvailable) {
+      if (usernameAvailable && email === req.emailAddress) {
         //TODO1: check bucket using email for uploaded image, if available
         //TODO2: after verification, create a account, use mongoDBHelper
         //TODO2.1: Attach the image link from bucket to mongoDB object
-        //TODO3 [DONE]: User the userId to generate a login token
         const user = await createNewAccount({
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.trim(),
-          password: email.trim(),
+          password: password.trim(),
           username: usernameSelected.trim(),
           profile_picture_url: "", // To be updated with image url
         });
         const token = generateLoginToken(user.insertedId);
         res.json({ valid: true, token });
-      } else {
-        res.send(400);
       }
-    } else {
-      res.status(401);
     }
+    res.status(400).send(); // Bad requests for Invalid requests
   } catch (e) {
     console.error("ErrorRegisterNewUser:", e);
     res.status(500).send("Please contact support!");
