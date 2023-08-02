@@ -21,6 +21,7 @@
 DB_UserName=<MONGODB_USERNAME>
 DB_PassWord=<MONGODB_PASSWORD>
 TOKEN_KEY=<YOUR KEY FOR JWT SIGNATURE>
+SIGNUP_TOKEN_KEY=<YOUR KEY FOR JWT SIGNATURE (Same or different from TOKEN_KEY)>
 ```
 
 > Replace the `<---HINT---->` with your own values.
