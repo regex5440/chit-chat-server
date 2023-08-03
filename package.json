@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "static": "node server.js",
-    "start": "nodemon server.js"
+    "static": "npx tsc && node server.js",
+    "start": "start cmd /k \"npx tsc -w\" & start cmd /k \"nodemon server.js\""
   },
   "author": "Harsh Dagar",
   "license": "MIT",
@@ -18,9 +18,11 @@
     "jsonwebtoken": "^9.0.0",
     "mongodb": "^5.4.0",
     "mongoose": "^7.4.1",
+    "nodemailer": "^6.9.4",
     "socket.io": "^4.6.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "nodemon": "^2.0.22",
+    "typescript": "^5.1.6"
   }
 }
