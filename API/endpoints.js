@@ -26,7 +26,7 @@ const loginAuthentication = async (req, res) => {
 
 //Signup Email authenticator
 const emailValidation = async (req, res) => {
-  const { emailAddress, code } = req.body;
+  const { emailAddress, code, resend } = req.body;
   if (!code) {
     if (!REGEXP.email.test(emailAddress)) {
       // INVALID EMAIL
@@ -35,11 +35,11 @@ const emailValidation = async (req, res) => {
     }
     const emailAlreadyRegistered = await isEmailAlreadyRegistered(emailAddress);
     if (!emailAlreadyRegistered) {
-      const OTPCreated = await provideOTPAuth(emailAddress);
-      if (OTPCreated.created) {
+      const OTPCreated = await provideOTPAuth(emailAddress, resend);
+      if (OTPCreated.created || OTPCreated.exists) {
         res.send({ message: "ok", valid: true }); // Email does not already exists and OTP created
       } else {
-        res.status(500).send({ message: OTPCreated.message });
+        res.send({ message: OTPCreated.message });
       }
     } else {
       res.send({ message: "Email already exists!", valid: false });

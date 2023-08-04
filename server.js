@@ -18,23 +18,20 @@ import { emailValidation, loginAuthentication } from "./API/endpoints.js";
 const expressApp = express();
 
 const server = createServer(expressApp);
+const corsPolicy = {
+  origin: "*", // This will be updated to the url of the frontend app
+  credentials: true,
+};
 const io = new Server(server, {
-  cors: { origin: "http://localhost:5173", credentials: true },
+  cors: corsPolicy,
 });
 
-expressApp.use(cors({ origin: "http://localhost:5173", credentials: true }));
+expressApp.use(cors(corsPolicy));
 expressApp.use(express.json());
 
 //Signup Endpoints
 
 expressApp.use("/email_verifier", emailValidation);
-
-//! TEST API BELOW
-// expressApp.get('/',(req,res)=>{
-// res.status(400).send()
-// })
-
-//! TEST API ABOVE
 
 //After email verification, use this API
 expressApp.use("/signup/api", signupTokenAuthority);
