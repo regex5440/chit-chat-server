@@ -19,8 +19,8 @@ const expressApp = express();
 
 const server = createServer(expressApp);
 const corsPolicy = {
-  origin: "*", // This will be updated to the url of the frontend app
-  credentials: true,
+  origin: "*", //TODO: This will be updated to the url of the frontend app
+  credentials: false,
 };
 const io = new Server(server, {
   cors: corsPolicy,

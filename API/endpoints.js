@@ -35,7 +35,7 @@ const emailValidation = async (req, res) => {
     }
     const emailAlreadyRegistered = await isEmailAlreadyRegistered(emailAddress);
     if (!emailAlreadyRegistered) {
-      const OTPCreated = await provideOTPAuth(emailAddress, resend);
+      const OTPCreated = await provideOTPAuth(emailAddress, resend, req.ip);
       if (OTPCreated.created || OTPCreated.exists) {
         res.send({ message: "ok", valid: true }); // Email does not already exists and OTP created
       } else {
@@ -45,7 +45,7 @@ const emailValidation = async (req, res) => {
       res.send({ message: "Email already exists!", valid: false });
     }
   } else {
-    const { valid } = verifyOTPAuth(emailAddress, parseInt(code));
+    const { valid } = verifyOTPAuth(emailAddress, parseInt(code), req.ip);
     if (valid) {
       res.json({
         token: generateNewToken({ emailAddress }, "signup"),
