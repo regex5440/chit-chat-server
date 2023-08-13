@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+const { Schema, model } = require("mongoose");
 
 const profileSchema = model(
   "Profile",
@@ -18,4 +18,4 @@ const profileSchema = model(
   })
 );
 
-export { profileSchema };
+module.exports = { profileSchema };

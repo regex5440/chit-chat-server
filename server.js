@@ -1,26 +1,26 @@
-import express from "express";
-import cors from "cors";
-import { Server } from "socket.io";
-import { createServer } from "http";
-import { SOCKET_HANDLERS } from "./utils/enums.js";
-import { chatsCollection, mongoDbClient } from "./MongoDB_Helper/index.js";
-import { ObjectId } from "mongodb";
-import { signupTokenAuthority, tokenAuthority } from "./API/middleware.js";
-import {
+const express = require("express");
+const cors = require("cors");
+const { Server } = require("socket.io");
+const { createServer } = require("http");
+const { SOCKET_HANDLERS } = require("./utils/enums.js");
+const { chatsCollection, mongoDbClient } = require("./MongoDB_Helper/index.js");
+const { ObjectId } = require("mongodb");
+const { signupTokenAuthority, tokenAuthority } = require("./API/middleware.js");
+const {
   connectionProfileData,
   userProfileData,
   userNameChecker,
   imageHandler,
   registerUser,
-} from "./API/Authenticated/api_endpoints.js";
-import { emailValidation, loginAuthentication } from "./API/endpoints.js";
+} = require("./API/Authenticated/api_endpoints.js");
+const { emailValidation, loginAuthentication } = require("./API/endpoints.js");
 
 const expressApp = express();
 
 const server = createServer(expressApp);
 const corsPolicy = {
-  origin: "*", //TODO: This will be updated to the url of the frontend app
-  credentials: false,
+  origin: "http://localhost:5173",
+  credentials: true,
 };
 const io = new Server(server, {
   cors: corsPolicy,
@@ -28,6 +28,7 @@ const io = new Server(server, {
 
 expressApp.use(cors(corsPolicy));
 expressApp.use(express.json());
+expressApp.use(express.raw({ limit: "1mb" }));
 
 //Signup Endpoints
 
@@ -36,7 +37,6 @@ expressApp.use("/email_verifier", emailValidation);
 //After email verification, use this API
 expressApp.use("/signup/api", signupTokenAuthority);
 expressApp.get("/signup/api/username_checker", userNameChecker);
-expressApp.use("/signup/api/imageUploader", imageHandler);
 expressApp.use("/signup/api/register", registerUser);
 
 // Login Endpoint
@@ -45,6 +45,7 @@ expressApp.post("/login", loginAuthentication);
 expressApp.use("/api", tokenAuthority);
 expressApp.get("/api/me", userProfileData);
 expressApp.get("/api/connections", connectionProfileData);
+expressApp.post("/api/imageUploader", imageHandler);
 
 // Socket
 io.on("connection", async (socket) => {

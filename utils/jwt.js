@@ -1,6 +1,6 @@
-import { config } from "dotenv";
+const { config } = require("dotenv");
 config();
-import jwt from "jsonwebtoken";
+const jwt = require("jsonwebtoken");
 
 function generateNewToken(data = {}, type = "login") {
   return jwt.sign(
@@ -30,4 +30,4 @@ function validateToken(token, callback, type = "login") {
   );
 }
 
-export { generateNewToken, generateLoginToken, validateToken };
+module.exports = { generateNewToken, generateLoginToken, validateToken };

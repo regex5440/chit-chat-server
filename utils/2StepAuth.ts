@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+const nodemailer = require("nodemailer");
 const OTPAuth: {
   [ip_address: string]: {
     code_list: Set<number>;
@@ -16,7 +16,7 @@ const mailTransporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD,
   },
 });
-const sendOTPMail = (email: string, otp: number) => {
+const sendOTPMail = async (email: string, otp: number) => {
   return mailTransporter.sendMail({
     from: "Chit-Chat <harshdagar@hdxdev.in>",
     to: email,
@@ -100,4 +100,4 @@ function OTPAuthCleaner() {
   }
 }
 
-export { provideOTPAuth, verifyOTPAuth };
+module.exports = { provideOTPAuth, verifyOTPAuth };

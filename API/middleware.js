@@ -1,4 +1,4 @@
-import { validateToken } from "../utils/jwt.js";
+const { validateToken } = require("../utils/jwt.js");
 
 const tokenAuthority = (req, res, next) => {
   const authToken = req.headers.authorization?.split(" ")[1];
@@ -40,4 +40,4 @@ const signupTokenAuthority = (req, res, next) => {
   }
 };
 
-export { tokenAuthority, signupTokenAuthority };
+module.exports = { tokenAuthority, signupTokenAuthority };

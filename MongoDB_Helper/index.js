@@ -1,9 +1,9 @@
-import { config } from "dotenv";
+const { config } = require("dotenv");
 config();
-import { MongoClient, ObjectId } from "mongodb";
-import { ProfileDataProjection } from "./projections.js";
+const { MongoClient, ObjectId } = require("mongodb");
+const { ProfileDataProjection } = require("./projections.js");
 
-export const mongoDbClient = new MongoClient(
+const mongoDbClient = new MongoClient(
   `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
     process.env.DB_PassWord
   )}@cluster0.qsbznrs.mongodb.net/?retryWrites=true&w=majority`
@@ -122,6 +122,7 @@ async function createNewAccount({
     status: "ONLINE",
     avatar: {
       url: profile_picture_url,
+      key: "",
     },
     last_active: "",
     connections: {},
@@ -133,12 +134,25 @@ async function createNewAccount({
   return newUser;
 }
 
-export {
+async function setProfilePictureUrl(user_id, url) {
+  return usersCollection.updateOne(
+    { _id: new ObjectId(user_id) },
+    { $set: { "avatar.url": url } }
+  );
+}
+
+module.exports = {
+  //MongoDBClient
+  mongoDbClient,
+  //Collections
+  chatsCollection,
+  usersCollection,
+  // Functions
   myProfile,
   connectionsData,
   verifyUser,
   isUsernameAvailable,
   isEmailAlreadyRegistered,
   createNewAccount,
-}; // Functions
-export { chatsCollection, usersCollection }; // Collections
+  setProfilePictureUrl,
+};

@@ -9,4 +9,4 @@ const ProfileDataProjection = Object.freeze({
   username: "$username",
 });
 
-export { ProfileDataProjection };
+module.exports = { ProfileDataProjection };

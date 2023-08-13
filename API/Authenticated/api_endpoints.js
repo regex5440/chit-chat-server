@@ -1,10 +1,12 @@
-import {
+const {
   connectionsData,
   createNewAccount,
   isUsernameAvailable,
   myProfile,
-} from "../../MongoDB_Helper/index.js";
-import { generateLoginToken } from "../../utils/jwt.js";
+  setProfilePictureUrl,
+} = require("../../MongoDB_Helper/index.js");
+const { generateLoginToken } = require("../../utils/jwt.js");
+const { uploadProfileImage } = require("../../CloudFlare_Helper/index.js");
 
 const userProfileData = async (req, res) => {
   console.log(req.userId, "userId");
@@ -48,13 +50,17 @@ const userNameChecker = (req, res) => {
   }
 };
 
-const imageHandler = (req, res) => {
-  //TODO: Create a image upload handler
-  /*
-   * Receive the authenticated request for AWS signed URL
-   * Get the signed URL from AWS and send as response
-   * AWS will receive the image directly and store it based on authenticated email
-   */
+const imageHandler = async (req, res) => {
+  const imageBlob = req.body;
+  if (!imageBlob) {
+    res.status(400).send("Image not provided!");
+  }
+  const data = await uploadProfileImage(req.userId, imageBlob);
+  console.log(data);
+  if (data) {
+    await setProfilePictureUrl(req.userId, data.Key);
+  }
+  res.send("ok");
 };
 
 const registerUser = async (req, res) => {
@@ -64,9 +70,6 @@ const registerUser = async (req, res) => {
         req.body;
       const usernameAvailable = await isUsernameAvailable(usernameSelected);
       if (usernameAvailable && email === req.emailAddress) {
-        //TODO1: check bucket using email for uploaded image, if available
-        //TODO2: after verification, create a account, use mongoDBHelper
-        //TODO2.1: Attach the image link from bucket to mongoDB object
         const user = await createNewAccount({
           firstName: firstName.trim(),
           lastName: lastName.trim(),
@@ -86,7 +89,7 @@ const registerUser = async (req, res) => {
   }
 };
 
-export {
+module.exports = {
   connectionProfileData,
   userProfileData,
   userNameChecker,
