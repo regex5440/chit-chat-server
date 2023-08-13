@@ -25,6 +25,11 @@ SIGNUP_TOKEN_KEY=<YOUR KEY FOR JWT SIGNATURE (Same or different from TOKEN_KEY)>
 EMAIL_SERVICE=<Email Service Name>
 EMAIL_USERNAME=<Email Username>
 EMAIL_PASSWORD=<Email Password>
+AWS_Endpoint=<AWS Endpoint URL (including account id)>
+AWS_Access_Key_ID=<TOKEN ACCESS ID>
+AWS_SecretAccess_Key=<TOKEN SECRET ACCESS KEY>
+S3_ProfileData_Bucket=<Bucket for profile pictures>
+S3_Assets_Bucket=<Bucket for attachments>
 ```
 
 > Replace the `<---HINT---->` with your own values.
