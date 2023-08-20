@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const ignorePaths = ["node_modules", ".git"];
+const ignorePaths = ["node_modules", ".git", ".husky"];
 const explore = (dirName) => {
   const files = fs.readdirSync(dirName);
   files.forEach((name) => {
