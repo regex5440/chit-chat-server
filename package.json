@@ -7,7 +7,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "static": "npx tsc && node server.js",
-    "start": "concurrently \"npx tsc -w\" \"nodemon server.js\""
+    "start": "concurrently \"npx tsc -w\" \"nodemon server.js\"",
+    "prepare": "husky install",
+    "clean-compiled": "node clean-compiled.js"
   },
   "author": "Harsh Dagar",
   "license": "MIT",
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.0",
+    "husky": "^8.0.3",
     "nodemon": "^2.0.22",
     "typescript": "^5.1.6"
   }
