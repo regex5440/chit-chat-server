@@ -31,7 +31,7 @@ const sendOTPMail = async (email: string, otp: number) => {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 </style>
-        <img alt="Chit Chat" style="display: block;margin: 0 auto;text-align: center;mix-blend-mode:color-burn; max-width: 100%;" src="https://chit-chat.s3.eu-north-1.amazonaws.com/chit-chat-logo.jpg"/>
+        <img alt="Chit Chat" style="display: block;margin: 0 auto;text-align: center;mix-blend-mode:color-burn; max-width: 100%;" src="https://cc-api.hdxdev.in/assets/chit-chat-logo-regular"/>
         <h2 style="color: #00287f;margin-bottom: 20px;text-decoration: underline;text-underline-position: under;">Email Authentication</h2>
         <p style="color: #555; line-height: 1.6;">Hi there!</p>
         <p style="color: #555; line-height: 1.6;">Your One-Time Password (OTP) for email verification is: <code style="color: #00287f;text-align: center;display: block;font-size: 32px;margin-top: 10px;letter-spacing: 25px;">${otp}</code></p>

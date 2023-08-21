@@ -14,6 +14,8 @@ const {
   registerUser,
 } = require("./API/Authenticated/api_endpoints.js");
 const { emailValidation, loginAuthentication } = require("./API/endpoints.js");
+const { createReadStream, fstat, existsSync, exists } = require("fs");
+const path = require("path");
 
 const expressApp = express();
 
@@ -31,7 +33,6 @@ expressApp.use(express.json());
 expressApp.use(express.raw({ limit: "1mb" }));
 
 //Signup Endpoints
-
 expressApp.use("/email_verifier", emailValidation);
 
 //After email verification, use this API
@@ -125,6 +126,27 @@ io.on("connection", async (socket) => {
         $set: { last_updated: currentTime },
       }
     );
+  });
+});
+
+//Assets
+expressApp.get("/assets/:assetId", async (req, res) => {
+  const assetID = req.params.assetId;
+  const IconsPath = path.resolve(__dirname, "icons");
+  let fileName = "";
+  switch (assetID) {
+    case "chit-chat-logo-regular":
+      fileName = "chit-chat-logo.jpg";
+      break;
+    default:
+      fileName = "invalid-file";
+  }
+  exists(path.join(IconsPath, fileName), (fileExists) => {
+    if (fileExists) {
+      res.sendFile(path.join(IconsPath, fileName));
+    } else {
+      res.status(404).send("Not Found!");
+    }
   });
 });
 
