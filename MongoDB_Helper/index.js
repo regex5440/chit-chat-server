@@ -1,7 +1,10 @@
 const { config } = require("dotenv");
 config();
 const { MongoClient, ObjectId } = require("mongodb");
-const { ProfileDataProjection } = require("./projections.js");
+const {
+  ProfileDataProjection,
+  ProfileSearchResults,
+} = require("./projections.js");
 
 const mongoDbClient = new MongoClient(
   `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
@@ -93,18 +96,35 @@ async function isUsernameAvailable(user_provided_username) {
   const user = await usersCollection.findOne({
     username: user_provided_username,
   });
-  if (!user) {
-    return true;
-  }
-  return false;
+  return !user ? true : false;
 }
 
 async function isEmailAlreadyRegistered(email_address) {
   const user = await usersCollection.findOne({ email: email_address });
-  if (user) {
-    return true;
-  }
-  return false;
+  return user ? true : false;
+}
+
+async function findUser(query) {
+  const users = await usersCollection
+    .aggregate([
+      {
+        $search: {
+          index: "user-search-index",
+          text: {
+            query,
+            path: ["firstName", "lastName", "username"],
+          },
+          sort: {
+            firstName: 1,
+          },
+        },
+      },
+      {
+        $project: ProfileSearchResults,
+      },
+    ])
+    .toArray();
+  return users;
 }
 
 async function createNewAccount({
@@ -155,4 +175,5 @@ module.exports = {
   isEmailAlreadyRegistered,
   createNewAccount,
   setProfilePictureUrl,
+  findUser,
 };

@@ -4,6 +4,7 @@ const {
   isUsernameAvailable,
   myProfile,
   setProfilePictureUrl,
+  findUser,
 } = require("../../MongoDB_Helper/index.js");
 const { generateLoginToken } = require("../../utils/jwt.js");
 const { uploadProfileImage } = require("../../CloudFlare_Helper/index.js");
@@ -47,6 +48,20 @@ const userNameChecker = (req, res) => {
   } catch (e) {
     console.log("FailedUsernameCheck:", e);
     res.status(500).send("Please contact support!");
+  }
+};
+
+const userSearchHandler = async (req, res) => {
+  try {
+    if (!req.query.q) res.status(400).send("Invalid request");
+    const users = await findUser(req.query.q);
+    res.json({
+      success: true,
+      data: users,
+    });
+  } catch (e) {
+    console.log(e);
+    res.status(500).send("Something went wrong!");
   }
 };
 
@@ -95,4 +110,5 @@ module.exports = {
   userNameChecker,
   imageHandler,
   registerUser,
+  userSearchHandler,
 };

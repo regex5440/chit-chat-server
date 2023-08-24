@@ -9,4 +9,13 @@ const ProfileDataProjection = Object.freeze({
   username: "$username",
 });
 
-module.exports = { ProfileDataProjection };
+const ProfileSearchResults = Object.freeze({
+  _id: true,
+  profile_type: true,
+  firstName: true,
+  lastName: true,
+  avatar: true,
+  username: true,
+});
+
+module.exports = { ProfileDataProjection, ProfileSearchResults };

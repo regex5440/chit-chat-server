@@ -12,6 +12,7 @@ const {
   userNameChecker,
   imageHandler,
   registerUser,
+  userSearchHandler,
 } = require("./API/Authenticated/api_endpoints.js");
 const { emailValidation, loginAuthentication } = require("./API/endpoints.js");
 const { createReadStream, fstat, existsSync, exists } = require("fs");
@@ -47,6 +48,7 @@ expressApp.use("/api", tokenAuthority);
 expressApp.get("/api/me", userProfileData);
 expressApp.get("/api/connections", connectionProfileData);
 expressApp.post("/api/imageUploader", imageHandler);
+expressApp.get("/api/findUser", userSearchHandler);
 
 // Socket
 io.on("connection", async (socket) => {
