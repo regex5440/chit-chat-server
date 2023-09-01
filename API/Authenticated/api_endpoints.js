@@ -53,15 +53,19 @@ const userNameChecker = (req, res) => {
 
 const userSearchHandler = async (req, res) => {
   try {
-    if (!req.query.q) res.status(400).send("Invalid request");
+    if (req.query.q?.length === 0) {
+      res.status(400).send("Invalid request");
+      return;
+    }
     const users = await findUser(req.query.q);
+    //TODO: Add group search
     res.json({
       success: true,
-      data: users,
+      data: { users, hasData: users.length > 0, groups: [] },
     });
   } catch (e) {
     console.log(e);
-    res.status(500).send("Something went wrong!");
+    res.status(500).json("Something went wrong!");
   }
 };
 

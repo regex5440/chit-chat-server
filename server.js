@@ -152,11 +152,12 @@ expressApp.get("/assets/:assetId", async (req, res) => {
   });
 });
 
-mongoDbClient
-  .connect()
-  .then(() => {
+try {
+  mongoDbClient.connect().then(() => {
     server.listen(5000, function () {
       console.log("Started at port 5000");
     });
-  })
-  .catch((err) => console.error("MongoConnectError:", err));
+  });
+} catch (e) {
+  console.error("MongoConnectError:", e);
+}
