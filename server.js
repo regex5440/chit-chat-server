@@ -13,9 +13,12 @@ const {
   imageHandler,
   registerUser,
   userSearchHandler,
-} = require("./API/Authenticated/api_endpoints.js");
-const { emailValidation, loginAuthentication } = require("./API/endpoints.js");
-const { createReadStream, fstat, existsSync, exists } = require("fs");
+} = require("./API/Authenticated/endpoint_handler.js");
+const {
+  emailValidation,
+  loginAuthentication,
+} = require("./API/endpoint_handler.js");
+const { existsSync } = require("fs");
 const path = require("path");
 
 const expressApp = express();
@@ -143,13 +146,11 @@ expressApp.get("/assets/:assetId", async (req, res) => {
     default:
       fileName = "invalid-file";
   }
-  exists(path.join(IconsPath, fileName), (fileExists) => {
-    if (fileExists) {
-      res.sendFile(path.join(IconsPath, fileName));
-    } else {
-      res.status(404).send("Not Found!");
-    }
-  });
+  if (existsSync(path.join(IconsPath, fileName))) {
+    res.sendFile(path.join(IconsPath, fileName));
+  } else {
+    res.status(404).send("Not Found!");
+  }
 });
 
 try {
