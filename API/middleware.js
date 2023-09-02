@@ -1,4 +1,5 @@
 const { validateToken } = require("../utils/jwt.js");
+const { ErrorResponse } = require("../utils/generator.js");
 
 const tokenAuthority = (req, res, next) => {
   const authToken = req.headers.authorization?.split(" ")[1];
@@ -30,7 +31,7 @@ const signupTokenAuthority = (req, res, next) => {
           req.emailAddress = data.emailAddress;
           next();
         } else {
-          res.status(401).send({ message: "Session Expired!" });
+          res.status(401).send(ErrorResponse({ message: "Session Expired!" }));
         }
       },
       "signup"

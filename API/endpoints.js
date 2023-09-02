@@ -5,6 +5,7 @@ const {
 const { provideOTPAuth, verifyOTPAuth } = require("../utils/2stepauth.js");
 const { REGEXP } = require("../utils/enums.js");
 const { generateLoginToken, generateNewToken } = require("../utils/jwt.js");
+const { SuccessResponse, ErrorResponse } = require("../utils/generator.js");
 
 //Login Page
 const loginAuthentication = async (req, res) => {
@@ -14,12 +15,15 @@ const loginAuthentication = async (req, res) => {
       username,
       password
     );
-    if (!userExists) res.send("User does not exists!");
+    if (!userExists)
+      res.send(ErrorResponse({ message: "User does not exists!" }));
     else if (!credentialsMatch)
-      res.send("Username or Password is not correct!");
+      res.send(
+        ErrorResponse({ message: "Username or Password is not correct!" })
+      );
     else {
       let token = generateLoginToken(userId);
-      res.send({ valid: true, token });
+      res.send(SuccessResponse({ data: token }));
     }
   }
 };
@@ -31,7 +35,7 @@ const emailValidation = async (req, res) => {
     if (!code) {
       if (!REGEXP.email.test(emailAddress)) {
         // INVALID EMAIL
-        res.send({ message: "Invalid Email", valid: false });
+        res.send(ErrorResponse({ message: "Invalid Email" }));
         return;
       }
       const emailAlreadyRegistered = await isEmailAlreadyRegistered(
@@ -40,26 +44,29 @@ const emailValidation = async (req, res) => {
       if (!emailAlreadyRegistered) {
         const OTPCreated = await provideOTPAuth(emailAddress, resend, req.ip);
         if (OTPCreated.created || OTPCreated.exists) {
-          res.send({ message: "ok", valid: true }); // Email does not already exists and OTP created
+          res.send(SuccessResponse({ message: "ok" })); // Email does not already exists and OTP created
         } else {
-          res.send({ message: OTPCreated.message });
+          res.send(ErrorResponse({ message: OTPCreated.message }));
         }
       } else {
-        res.send({ message: "Email already exists!", valid: false });
+        res.send(ErrorResponse({ message: "Email already exists!" }));
       }
     } else {
       const { valid } = verifyOTPAuth(emailAddress, parseInt(code), req.ip);
       if (valid) {
-        res.json({
-          token: generateNewToken({ emailAddress }, "signup"),
-          verified: true,
-        });
+        res.send(
+          SuccessResponse({
+            data: generateNewToken({ emailAddress }, "signup"),
+          })
+        );
       } else {
-        res.json({ verified: false });
+        res.send(ErrorResponse({ message: "Unverified" }));
       }
     }
   } catch (e) {
-    res.status(500).send("Something went wrong to us!");
+    res
+      .status(500)
+      .send(ErrorResponse({ message: "Something went wrong to us!" }));
     console.error("FailedEmailAuthentication:", e);
   }
 };
