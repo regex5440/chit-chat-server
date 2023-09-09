@@ -141,8 +141,8 @@ async function createNewAccount({
     lastName,
     status: "ONLINE",
     avatar: {
-      url: profile_picture_url,
-      key: "",
+      url: "",
+      key: profile_picture_url,
     },
     last_active: "",
     connections: {},
