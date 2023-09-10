@@ -2,9 +2,9 @@ const {
   connectionsData,
   createNewAccount,
   isUsernameAvailable,
-  myProfile,
   setProfilePictureUrl,
   findUser,
+  getProfileById,
 } = require("../../MongoDB_Helper/index.js");
 const { generateLoginToken } = require("../../utils/jwt.js");
 const { uploadProfileImage } = require("../../CloudFlare_Helper/index.js");
@@ -12,7 +12,7 @@ const { ErrorResponse, SuccessResponse } = require("../../utils/generator.js");
 
 const userProfileData = async (req, res) => {
   try {
-    const profileData = await myProfile(req.userId);
+    const profileData = await getProfileById(req.userId);
     res.send(SuccessResponse({ data: profileData }));
   } catch (e) {
     console.log("/ProfileAPIError:", e);

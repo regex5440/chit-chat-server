@@ -3,7 +3,15 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 const { createServer } = require("http");
 const { SOCKET_HANDLERS } = require("./utils/enums.js");
-const { chatsCollection, mongoDbClient } = require("./MongoDB_Helper/index.js");
+const {
+  chatsCollection,
+  mongoDbClient,
+  addConnection,
+  getChat,
+  findUser,
+  getProfileById,
+  getConnectionData,
+} = require("./MongoDB_Helper/index.js");
 const { ObjectId } = require("mongodb");
 const { signupTokenAuthority, tokenAuthority } = require("./API/middleware.js");
 const {
@@ -20,6 +28,7 @@ const {
 } = require("./API/endpoint_handler.js");
 const { existsSync } = require("fs");
 const path = require("path");
+const { validateToken } = require("./utils/jwt.js");
 
 const expressApp = express();
 
@@ -56,17 +65,26 @@ expressApp.get("/api/findUser", userSearchHandler);
 // Socket
 io.on("connection", async (socket) => {
   // console.log("Socket CONNECTED", socket);
-  let authToken = socket.handshake.headers.authorization;
+  let authToken = socket.handshake.headers.authorization.split(" ")[1];
   let loggedInUserId = "";
-  if (authToken === "xyz") {
-    loggedInUserId = "645645674572e93ac7213b53";
-  } else if (authToken === "abc") {
-    loggedInUserId = "645646504572e93ac7213b54";
+  try {
+    validateToken(authToken, (data) => {
+      if (data) {
+        loggedInUserId = data.userId;
+        console.log("VALIDATED SOCKET", loggedInUserId);
+      }
+    });
+  } catch (e) {
+    if (e) {
+      socket.disconnect(true);
+      return;
+    }
   }
 
   const chatStream = chatsCollection.watch();
   chatStream.on("change", async (document) => {
     console.log(document);
+    if (document.operationType !== "update") return;
     const {
       documentKey,
       updateDescription: { updatedFields },
@@ -106,17 +124,36 @@ io.on("connection", async (socket) => {
     // socket.emit(SOCKET_HANDLERS.CHAT.typingStatus,)
   });
 
+  socket.on(SOCKET_HANDLERS.CHAT.newRequest, async (receiverId, message) => {
+    const { chat_id } = await addConnection(
+      loggedInUserId,
+      receiverId,
+      message
+    );
+    const [chats, receiverProfile, connectionData] = await Promise.all([
+      getChat([chat_id]),
+      getProfileById(receiverId),
+      getConnectionData(loggedInUserId, receiverId),
+    ]);
+    socket.emit(SOCKET_HANDLERS.CHAT.newRequstSuccess, {
+      chat: chats[0],
+      connectionProfile: { ...receiverProfile, ...connectionData },
+    });
+  });
+
   socket.on(SOCKET_HANDLERS.CHAT.typingStatusUpdate, (chat_id, author) => {
-    if (author.isTyping) {
-      chatsCollection.updateOne(
-        { _id: new ObjectId(chat_id) },
-        { $addToSet: { authors_typing: new ObjectId(author.authorId) } }
-      );
-    } else {
-      chatsCollection.updateOne(
-        { _id: new ObjectId(chat_id) },
-        { $pull: { authors_typing: new ObjectId(author.authorId) } }
-      );
+    if (chat_id && author) {
+      if (author.isTyping) {
+        chatsCollection.updateOne(
+          { _id: new ObjectId(chat_id) },
+          { $addToSet: { authors_typing: new ObjectId(author.authorId) } }
+        );
+      } else {
+        chatsCollection.updateOne(
+          { _id: new ObjectId(chat_id) },
+          { $pull: { authors_typing: new ObjectId(author.authorId) } }
+        );
+      }
     }
   });
 

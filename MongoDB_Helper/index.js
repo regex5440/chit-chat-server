@@ -20,11 +20,19 @@ const chatsCollection = db.collection("chats"),
         -> Functions that are used to provide the initial API response
  ?      User Profile
  */
-async function myProfile(userId) {
+async function getProfileById(id) {
   return await usersCollection.findOne(
-    { _id: new ObjectId(userId) },
-    { projection: { _id: 0, ...ProfileDataProjection } }
+    { _id: new ObjectId(id) },
+    { projection: ProfileDataProjection }
   );
+}
+
+async function getConnectionData(userId, connectionId) {
+  const { connectionData } = await usersCollection.findOne(
+    { _id: new ObjectId(userId) },
+    { projection: { _id: 0, connectionData: `$connections.${connectionId}` } }
+  );
+  return connectionData;
 }
 
 //?   Login
@@ -56,10 +64,7 @@ async function connectionsData(userId) {
     .find(
       { _id: { $in: contactIds } },
       {
-        projection: {
-          _id: 0,
-          ...ProfileDataProjection,
-        },
+        projection: ProfileDataProjection,
       }
     )
     .toArray();
@@ -73,7 +78,12 @@ async function connectionsData(userId) {
     ({ chat_id }) => new ObjectId(chat_id)
   );
 
-  const chats = await chatsCollection //*  Providing chat data with last 20 messages
+  const chats = await getChat(chatIds);
+  return { connections, chats };
+}
+
+async function getChat(chatIds = [], messageCount = 20) {
+  return await chatsCollection //*  Providing chat data with last 20 messages
     .find(
       { _id: { $in: chatIds } },
       {
@@ -84,12 +94,11 @@ async function connectionsData(userId) {
           last_updated: 1,
           created_at: 1,
           authors_typing: 1,
-          messages: { $slice: ["$messages", 0, 20] },
+          messages: { $slice: ["$messages", 0, messageCount] },
         },
       }
     )
     .toArray();
-  return { connections, chats };
 }
 
 async function isUsernameAvailable(user_provided_username) {
@@ -120,7 +129,7 @@ async function findUser(query) {
         },
       },
       {
-        $project: ProfileSearchResults,
+        $project: ProfileDataProjection,
       },
     ])
     .toArray();
@@ -154,11 +163,70 @@ async function createNewAccount({
   return newUser;
 }
 
+async function createNewChat(participant_Ids = [], messageObject = null) {
+  if (messageObject) {
+    messageObject.timestamp = new Date();
+  }
+  const newChat = await chatsCollection.insertOne({
+    authors_typing: [],
+    created_at: new Date(),
+    last_updated: new Date(),
+    messages: messageObject ? [messageObject] : [],
+    participants: participant_Ids,
+  });
+  return newChat;
+}
+
 async function setProfilePictureUrl(user_id, url) {
   return usersCollection.updateOne(
     { _id: new ObjectId(user_id) },
     { $set: { "avatar.url": url } }
   );
+}
+
+async function addConnection(fromContactId, toContactId, messageObject = {}) {
+  const newChat = await createNewChat(
+    [fromContactId, toContactId],
+    messageObject
+  );
+  const newConnectionInSender = {
+    $set: {
+      [`connections.${toContactId}`]: {
+        unseen_messages_count: 0,
+        chat_id: new ObjectId(newChat.insertedId),
+      },
+    },
+  };
+  const newConnectionInReceiver = {
+    $set: {
+      [`connections.${fromContactId}`]: {
+        unseen_messages_count: 1,
+        chat_id: new ObjectId(newChat.insertedId),
+      },
+    },
+  };
+  await usersCollection.bulkWrite(
+    [
+      {
+        updateOne: {
+          filter: { _id: new ObjectId(fromContactId) },
+          update: newConnectionInSender,
+        },
+      },
+      {
+        updateOne: {
+          filter: { _id: new ObjectId(toContactId) },
+          update: newConnectionInReceiver,
+        },
+      },
+    ],
+    {
+      ordered: false,
+    }
+  );
+  return {
+    chat_id: newChat.insertedId,
+  };
 }
 
 module.exports = {
@@ -168,9 +236,12 @@ module.exports = {
   chatsCollection,
   usersCollection,
   // Functions
-  myProfile,
+  addConnection,
+  getProfileById,
+  getConnectionData,
   connectionsData,
   verifyUser,
+  getChat,
   isUsernameAvailable,
   isEmailAlreadyRegistered,
   createNewAccount,
