@@ -79,10 +79,10 @@ async function connectionsData(userId) {
   );
 
   const chats = await getChat(chatIds);
-  return { connections, chats };
+  return { connections, chats, chatIds, hasData: contactIds.length > 0 };
 }
 
-async function getChat(chatIds = [], messageCount = 20) {
+async function getChat(chatIds = [], messageCount = 20, offset = 0) {
   return await chatsCollection //*  Providing chat data with last 20 messages
     .find(
       { _id: { $in: chatIds } },
@@ -94,7 +94,7 @@ async function getChat(chatIds = [], messageCount = 20) {
           last_updated: 1,
           created_at: 1,
           authors_typing: 1,
-          messages: { $slice: ["$messages", 0, messageCount] },
+          messages: { $slice: ["$messages", offset, messageCount] },
         },
       }
     )
@@ -158,6 +158,8 @@ async function createNewAccount({
     email,
     password,
     username,
+    created_at: new Date(),
+    blocked_ids: [],
   });
   console.log(newUser);
   return newUser;

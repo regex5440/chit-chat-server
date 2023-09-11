@@ -11,6 +11,7 @@ const {
   findUser,
   getProfileById,
   getConnectionData,
+  connectionsData,
 } = require("./MongoDB_Helper/index.js");
 const { ObjectId } = require("mongodb");
 const { signupTokenAuthority, tokenAuthority } = require("./API/middleware.js");
@@ -58,13 +59,13 @@ expressApp.post("/login", loginAuthentication);
 // Authenticated Login Endpoints
 expressApp.use("/api", tokenAuthority);
 expressApp.get("/api/me", userProfileData);
-expressApp.get("/api/connections", connectionProfileData);
 expressApp.post("/api/imageUploader", imageHandler);
 expressApp.get("/api/findUser", userSearchHandler);
 
 // Socket
 io.on("connection", async (socket) => {
-  // console.log("Socket CONNECTED", socket);
+  // console.log("Socket CONNECTED", socket.rooms);
+  //TODO: Optimize Authorization if possible
   let authToken = socket.handshake.headers.authorization.split(" ")[1];
   let loggedInUserId = "";
   try {
@@ -81,48 +82,59 @@ io.on("connection", async (socket) => {
     }
   }
 
-  const chatStream = chatsCollection.watch();
-  chatStream.on("change", async (document) => {
-    console.log(document);
-    if (document.operationType !== "update") return;
-    const {
-      documentKey,
-      updateDescription: { updatedFields },
-      operationType,
-    } = document;
-    let { participants } = await chatsCollection.findOne({
-      _id: documentKey._id,
-    });
-    participants = participants.map((objectid) => objectid.toString());
-    if (participants.indexOf(loggedInUserId) > -1) {
-      console.log("User Specific update");
-      console.log(updatedFields.messages);
-      if (operationType === "update") {
-        if (!JSON.stringify(updatedFields).includes(loggedInUserId)) {
-          // Update only limited to receiver
-          if (updatedFields.authors_typing) {
-            //Typing Status
-            socket.emit(
-              SOCKET_HANDLERS.CHAT.typingStatusUpdate,
-              documentKey._id,
-              updatedFields.authors_typing
-            );
-          }
-          if (updatedFields.last_updated) {
-            // New message added to chat
-            const messageData = Object.values(updatedFields)[1];
-            // if (messageData.sender_id !== loggedInUserId) {
-            socket.emit(SOCKET_HANDLERS.CHAT.newMessage, documentKey._id, {
-              last_updated: updatedFields.last_updated,
-              message: messageData,
-            });
-            // }
-          }
-        }
-      }
-    }
-    // socket.emit(SOCKET_HANDLERS.CHAT.typingStatus,)
-  });
+  //TODO: Send connections here
+  const { chatIds, chats, connections, hasData } = await connectionsData(
+    loggedInUserId
+  );
+  socket.emit(SOCKET_HANDLERS.CONNECTION_DATA, { hasData, chats, connections });
+
+  //TODO: Join the room of chat_ids
+  socket.join(chatIds);
+
+  //TODO: Setup handlers for room updates
+
+  // const chatStream = chatsCollection.watch();
+  // chatStream.on("change", async (document) => {
+  //   console.log(document);
+  //   if (document.operationType !== "update") return;
+  //   const {
+  //     documentKey,
+  //     updateDescription: { updatedFields },
+  //     operationType,
+  //   } = document;
+  //   let { participants } = await chatsCollection.findOne({
+  //     _id: documentKey._id,
+  //   });
+  //   participants = participants.map((objectid) => objectid.toString());
+  //   if (participants.indexOf(loggedInUserId) > -1) {
+  //     console.log("User Specific update");
+  //     console.log(updatedFields.messages);
+  //     if (operationType === "update") {
+  //       if (!JSON.stringify(updatedFields).includes(loggedInUserId)) {
+  //         // Update only limited to receiver
+  //         if (updatedFields.authors_typing) {
+  //           //Typing Status
+  //           socket.emit(
+  //             SOCKET_HANDLERS.CHAT.typingStatusUpdate,
+  //             documentKey._id,
+  //             updatedFields.authors_typing
+  //           );
+  //         }
+  //         if (updatedFields.last_updated) {
+  //           // New message added to chat
+  //           const messageData = Object.values(updatedFields)[1];
+  //           // if (messageData.sender_id !== loggedInUserId) {
+  //           socket.emit(SOCKET_HANDLERS.CHAT.newMessage, documentKey._id, {
+  //             last_updated: updatedFields.last_updated,
+  //             message: messageData,
+  //           });
+  //           // }
+  //         }
+  //       }
+  //     }
+  //   }
+  //   // socket.emit(SOCKET_HANDLERS.CHAT.typingStatus,)
+  // });
 
   socket.on(SOCKET_HANDLERS.CHAT.newRequest, async (receiverId, message) => {
     const { chat_id } = await addConnection(
@@ -158,6 +170,12 @@ io.on("connection", async (socket) => {
   });
 
   socket.on(SOCKET_HANDLERS.CHAT.newMessage, (chat_id, messageObject) => {
+    socket.broadcast.emit(
+      "message",
+      messageObject.text + " from " + messageObject.sender_id
+    );
+    return;
+
     let currentTime = new Date();
     messageObject.timestamp = currentTime;
 

@@ -1,5 +1,4 @@
 const {
-  connectionsData,
   createNewAccount,
   isUsernameAvailable,
   setProfilePictureUrl,
@@ -16,24 +15,6 @@ const userProfileData = async (req, res) => {
     res.send(SuccessResponse({ data: profileData }));
   } catch (e) {
     console.log("/ProfileAPIError:", e);
-    res.sendStatus(500);
-  }
-};
-
-const connectionProfileData = async function (req, res) {
-  try {
-    const data = await connectionsData(req.userId);
-    res.send(
-      SuccessResponse({
-        data: {
-          hasData: Object.keys(data.connections).length > 0,
-          contacts: data.connections,
-          chats: data.chats,
-        },
-      })
-    );
-  } catch (e) {
-    console.error("/ConnectionsAPIError:", e);
     res.sendStatus(500);
   }
 };
@@ -118,7 +99,6 @@ const registerUser = async (req, res) => {
 };
 
 module.exports = {
-  connectionProfileData,
   userProfileData,
   userNameChecker,
   imageHandler,

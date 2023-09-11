@@ -5,6 +5,7 @@ const SOCKET_HANDLERS = {
     newRequest: "newChatRequest",
     newRequstSuccess: "newChatRequestSuccess",
   },
+  CONNECTION_DATA: "connectionsData_from_socket",
 };
 
 const REGEXP = {
