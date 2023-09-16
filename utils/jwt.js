@@ -17,17 +17,22 @@ function generateLoginToken(userId) {
 }
 
 function validateToken(token, callback, type = "login") {
-  jwt.verify(
-    token,
-    type === "login" ? process.env.TOKEN_KEY : process.env.SIGNUP_TOKEN_KEY,
-    function (err, data) {
-      if (err) {
-        console.error(err);
-        callback(false);
+  try {
+    jwt.verify(
+      token,
+      type === "login" ? process.env.TOKEN_KEY : process.env.SIGNUP_TOKEN_KEY,
+      function (err, data) {
+        if (err) {
+          console.error(err);
+          callback(false);
+        }
+        callback(data);
       }
-      callback(data);
-    }
-  );
+    );
+  } catch (e) {
+    callback(false);
+    console.log("TokenVerifyFailed:", e);
+  }
 }
 
 module.exports = { generateNewToken, generateLoginToken, validateToken };

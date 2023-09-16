@@ -12,6 +12,8 @@ const {
   getProfileById,
   getConnectionData,
   connectionsData,
+  addMessage,
+  updateUnseenMsgCount,
 } = require("./MongoDB_Helper/index.js");
 const { ObjectId } = require("mongodb");
 const { signupTokenAuthority, tokenAuthority } = require("./API/middleware.js");
@@ -35,7 +37,7 @@ const expressApp = express();
 
 const server = createServer(expressApp);
 const corsPolicy = {
-  origin: "http://localhost:5173",
+  origin: process.env.Client_URL,
   credentials: true,
 };
 const io = new Server(server, {
@@ -56,6 +58,7 @@ expressApp.use("/signup/api/register", registerUser);
 
 // Login Endpoint
 expressApp.post("/login", loginAuthentication);
+
 // Authenticated Login Endpoints
 expressApp.use("/api", tokenAuthority);
 expressApp.get("/api/me", userProfileData);
@@ -69,6 +72,10 @@ io.on("connection", async (socket) => {
   let authToken = socket.handshake.headers.authorization.split(" ")[1];
   let loggedInUserId = "";
   try {
+    if (authToken.length < 10) {
+      throw new Error("Invalid Auth Token");
+    }
+    console.log({ authToken });
     validateToken(authToken, (data) => {
       if (data) {
         loggedInUserId = data.userId;
@@ -82,16 +89,12 @@ io.on("connection", async (socket) => {
     }
   }
 
-  //TODO: Send connections here
   const { chatIds, chats, connections, hasData } = await connectionsData(
     loggedInUserId
   );
   socket.emit(SOCKET_HANDLERS.CONNECTION_DATA, { hasData, chats, connections });
 
-  //TODO: Join the room of chat_ids
   socket.join(chatIds);
-
-  //TODO: Setup handlers for room updates
 
   // const chatStream = chatsCollection.watch();
   // chatStream.on("change", async (document) => {
@@ -136,57 +139,83 @@ io.on("connection", async (socket) => {
   //   // socket.emit(SOCKET_HANDLERS.CHAT.typingStatus,)
   // });
 
-  socket.on(SOCKET_HANDLERS.CHAT.newRequest, async (receiverId, message) => {
-    const { chat_id } = await addConnection(
-      loggedInUserId,
-      receiverId,
-      message
-    );
-    const [chats, receiverProfile, connectionData] = await Promise.all([
-      getChat([chat_id]),
-      getProfileById(receiverId),
-      getConnectionData(loggedInUserId, receiverId),
-    ]);
-    socket.emit(SOCKET_HANDLERS.CHAT.newRequstSuccess, {
-      chat: chats[0],
-      connectionProfile: { ...receiverProfile, ...connectionData },
-    });
-  });
+  socket.on(
+    SOCKET_HANDLERS.CHAT.NewRequest,
+    async ({ receiverId, messageObject }) => {
+      const { chat_id } = await addConnection(
+        loggedInUserId,
+        receiverId,
+        messageObject
+      );
+      socket.join(chat_id.toString());
+      const [chats, receiverProfile, connectionData] = await Promise.all([
+        getChat([chat_id]),
+        getProfileById(receiverId),
+        getConnectionData(loggedInUserId, receiverId),
+      ]);
+      socket.emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
+        chat: chats[0],
+        connectionProfile: { ...receiverProfile, ...connectionData },
+      });
+    }
+  );
 
-  socket.on(SOCKET_HANDLERS.CHAT.typingStatusUpdate, (chat_id, author) => {
+  socket.on(SOCKET_HANDLERS.CHAT.TypingUpdate, (chat_id, author) => {
     if (chat_id && author) {
-      if (author.isTyping) {
-        chatsCollection.updateOne(
-          { _id: new ObjectId(chat_id) },
-          { $addToSet: { authors_typing: new ObjectId(author.authorId) } }
-        );
-      } else {
-        chatsCollection.updateOne(
-          { _id: new ObjectId(chat_id) },
-          { $pull: { authors_typing: new ObjectId(author.authorId) } }
-        );
-      }
+      socket
+        .to(chat_id)
+        .emit(SOCKET_HANDLERS.CHAT.TypingUpdate, chat_id, author);
+      /*
+       * // TODO: It should be a throttling update from client.
+       * Because if the user is just logged in and one of it's connections was typing then it won't be send to the logged in user. Because typing update was sent before they were logged in
+       */
+      // if (author.isTyping) {
+      //   chatsCollection.updateOne(
+      //     { _id: new ObjectId(chat_id) },
+      //     { $addToSet: { authors_typing: new ObjectId(author.authorId) } }
+      //   );
+      // } else {
+      //   chatsCollection.updateOne(
+      //     { _id: new ObjectId(chat_id) },
+      //     { $pull: { authors_typing: new ObjectId(author.authorId) } }
+      //   );
+      // }
     }
   });
 
-  socket.on(SOCKET_HANDLERS.CHAT.newMessage, (chat_id, messageObject) => {
-    socket.broadcast.emit(
-      "message",
-      messageObject.text + " from " + messageObject.sender_id
-    );
-    return;
-
-    let currentTime = new Date();
-    messageObject.timestamp = currentTime;
-
-    chatsCollection.updateOne(
-      { _id: new ObjectId(chat_id) },
-      {
-        $push: { messages: messageObject },
-        $set: { last_updated: currentTime },
+  socket.on(
+    SOCKET_HANDLERS.CHAT.NewMessage,
+    ({ chat_id, receiverId, messageObject }) => {
+      let currentTime = new Date();
+      messageObject.timestamp = currentTime;
+      try {
+        Promise.all([
+          addMessage(chat_id, messageObject),
+          updateUnseenMsgCount(messageObject.sender_id, receiverId),
+        ]);
+        io.in(chat_id).emit(
+          SOCKET_HANDLERS.CHAT.NewMessage,
+          chat_id,
+          currentTime,
+          messageObject
+        );
+      } catch (e) {
+        console.log("MessageTransferFailed:", e);
       }
-    );
-  });
+    }
+  );
+
+  socket.on(
+    SOCKET_HANDLERS.CHAT.SeenUpdate,
+    (chat_id, seenByUserId, toReceiverId) => {
+      io.to(chat_id).emit(
+        SOCKET_HANDLERS.CHAT.SeenUpdate,
+        chat_id,
+        seenByUserId
+      );
+      updateUnseenMsgCount(toReceiverId, seenByUserId, false);
+    }
+  );
 });
 
 //Assets

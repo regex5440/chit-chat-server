@@ -60,17 +60,27 @@ async function connectionsData(userId) {
   );
 
   const contactIds = Object.keys(connections).map((id) => new ObjectId(id));
+  const contactsUnseenMsgCountCommand = {
+    unseen_messages_count: `$connections.${userId}.unseen_messages_count`,
+  };
   const contactsArray = await usersCollection
     .find(
       { _id: { $in: contactIds } },
       {
-        projection: ProfileDataProjection,
+        projection: {
+          ...ProfileDataProjection,
+          ...contactsUnseenMsgCountCommand,
+        },
       }
     )
     .toArray();
 
+  const seenByPropertyMapped = {};
   contactsArray.forEach((contact) => {
     //*  Adding profileData for each connection
+    seenByPropertyMapped[connections[contact.id].chat_id] =
+      contact.unseen_messages_count === 0;
+    delete contact.unseen_messages_count;
     Object.assign(connections[contact.id], contact);
   });
 
@@ -78,11 +88,20 @@ async function connectionsData(userId) {
     ({ chat_id }) => new ObjectId(chat_id)
   );
 
-  const chats = await getChat(chatIds);
-  return { connections, chats, chatIds, hasData: contactIds.length > 0 };
+  const chatsArray = await getChat(chatIds);
+  chatsArray.forEach((chat, index) => {
+    chatsArray[index].seenByConnection = seenByPropertyMapped[chat.chat_id];
+  });
+
+  return {
+    connections,
+    chats: chatsArray,
+    chatIds: chatIds.map((objectId) => objectId.toString()),
+    hasData: contactIds.length > 0,
+  };
 }
 
-async function getChat(chatIds = [], messageCount = 20, offset = 0) {
+async function getChat(chatIds = [], initialMessagesCount = 20) {
   return await chatsCollection //*  Providing chat data with last 20 messages
     .find(
       { _id: { $in: chatIds } },
@@ -94,7 +113,7 @@ async function getChat(chatIds = [], messageCount = 20, offset = 0) {
           last_updated: 1,
           created_at: 1,
           authors_typing: 1,
-          messages: { $slice: ["$messages", offset, messageCount] },
+          messages: { $slice: ["$messages", -1 * initialMessagesCount] },
         },
       }
     )
@@ -188,7 +207,7 @@ async function setProfilePictureUrl(user_id, url) {
 
 async function addConnection(fromContactId, toContactId, messageObject = {}) {
   const newChat = await createNewChat(
-    [fromContactId, toContactId],
+    [new ObjectId(fromContactId), new ObjectId(toContactId)],
     messageObject
   );
   const newConnectionInSender = {
@@ -231,6 +250,28 @@ async function addConnection(fromContactId, toContactId, messageObject = {}) {
   };
 }
 
+async function addMessage(chat_id, messageObject) {
+  await chatsCollection.updateOne(
+    { _id: new ObjectId(chat_id) },
+    {
+      $push: { messages: messageObject },
+      $set: { last_updated: messageObject.timestamp },
+    }
+  );
+}
+async function updateUnseenMsgCount(senderId, receiverId, INCREASE = true) {
+  const update = {
+    [INCREASE ? "$inc" : "$set"]: {
+      [`connections.${senderId}.unseen_messages_count`]: INCREASE ? 1 : 0,
+    },
+  };
+  const collectionUpdate = await usersCollection.updateMany(
+    {
+      _id: new ObjectId(receiverId),
+    },
+    update
+  );
+}
 module.exports = {
   //MongoDBClient
   mongoDbClient,
@@ -239,6 +280,7 @@ module.exports = {
   usersCollection,
   // Functions
   addConnection,
+  addMessage,
   getProfileById,
   getConnectionData,
   connectionsData,
@@ -249,4 +291,5 @@ module.exports = {
   createNewAccount,
   setProfilePictureUrl,
   findUser,
+  updateUnseenMsgCount,
 };
