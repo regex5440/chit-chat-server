@@ -95,49 +95,7 @@ io.on("connection", async (socket) => {
   socket.emit(SOCKET_HANDLERS.CONNECTION_DATA, { hasData, chats, connections });
 
   socket.join(chatIds);
-
-  // const chatStream = chatsCollection.watch();
-  // chatStream.on("change", async (document) => {
-  //   console.log(document);
-  //   if (document.operationType !== "update") return;
-  //   const {
-  //     documentKey,
-  //     updateDescription: { updatedFields },
-  //     operationType,
-  //   } = document;
-  //   let { participants } = await chatsCollection.findOne({
-  //     _id: documentKey._id,
-  //   });
-  //   participants = participants.map((objectid) => objectid.toString());
-  //   if (participants.indexOf(loggedInUserId) > -1) {
-  //     console.log("User Specific update");
-  //     console.log(updatedFields.messages);
-  //     if (operationType === "update") {
-  //       if (!JSON.stringify(updatedFields).includes(loggedInUserId)) {
-  //         // Update only limited to receiver
-  //         if (updatedFields.authors_typing) {
-  //           //Typing Status
-  //           socket.emit(
-  //             SOCKET_HANDLERS.CHAT.typingStatusUpdate,
-  //             documentKey._id,
-  //             updatedFields.authors_typing
-  //           );
-  //         }
-  //         if (updatedFields.last_updated) {
-  //           // New message added to chat
-  //           const messageData = Object.values(updatedFields)[1];
-  //           // if (messageData.sender_id !== loggedInUserId) {
-  //           socket.emit(SOCKET_HANDLERS.CHAT.newMessage, documentKey._id, {
-  //             last_updated: updatedFields.last_updated,
-  //             message: messageData,
-  //           });
-  //           // }
-  //         }
-  //       }
-  //     }
-  //   }
-  //   // socket.emit(SOCKET_HANDLERS.CHAT.typingStatus,)
-  // });
+  socket.join(`${loggedInUserId}-req`); //New Request Room
 
   socket.on(
     SOCKET_HANDLERS.CHAT.NewRequest,
@@ -148,15 +106,35 @@ io.on("connection", async (socket) => {
         messageObject
       );
       socket.join(chat_id.toString());
-      const [chats, receiverProfile, connectionData] = await Promise.all([
+      const [
+        chats,
+        [profile1, profile2],
+        senderConnectionData,
+        receiverConnectionData,
+      ] = await Promise.all([
         getChat([chat_id]),
-        getProfileById(receiverId),
+        getProfileById([loggedInUserId, receiverId]),
         getConnectionData(loggedInUserId, receiverId),
+        getConnectionData(receiverId, loggedInUserId),
       ]);
       socket.emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
         chat: chats[0],
-        connectionProfile: { ...receiverProfile, ...connectionData },
+        connectionProfile: {
+          ...(profile1.id.toString() === loggedInUserId ? profile2 : profile1),
+          ...senderConnectionData,
+        },
       });
+      socket
+        .to(`${receiverId}-req`)
+        .emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
+          chat: chats[0],
+          connectionProfile: {
+            ...(profile1.id.toString() !== loggedInUserId
+              ? profile2
+              : profile1),
+            ...receiverConnectionData,
+          },
+        });
     }
   );
 

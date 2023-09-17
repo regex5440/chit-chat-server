@@ -21,10 +21,25 @@ const chatsCollection = db.collection("chats"),
  ?      User Profile
  */
 async function getProfileById(id) {
-  return await usersCollection.findOne(
-    { _id: new ObjectId(id) },
-    { projection: ProfileDataProjection }
-  );
+  if (typeof id === "string") {
+    return await usersCollection.findOne(
+      { _id: new ObjectId(id) },
+      { projection: ProfileDataProjection }
+    );
+  } else if (Array.isArray(id)) {
+    return await usersCollection
+      .find(
+        {
+          _id: {
+            $in: id.map((id) => new ObjectId(id)),
+          },
+        },
+        {
+          projection: ProfileDataProjection,
+        }
+      )
+      .toArray();
+  }
 }
 
 async function getConnectionData(userId, connectionId) {
