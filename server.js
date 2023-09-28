@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { Server } = require("socket.io");
 const { createServer } = require("http");
-const { SOCKET_HANDLERS } = require("./utils/enums.js");
+const { SOCKET_HANDLERS, STATUS_UPDATE } = require("./utils/enums.js");
 const {
   chatsCollection,
   mongoDbClient,
@@ -14,6 +14,9 @@ const {
   connectionsData,
   addMessage,
   updateUnseenMsgCount,
+  clearChat,
+  deleteChat,
+  updateStatus,
 } = require("./MongoDB_Helper/index.js");
 const { ObjectId } = require("mongodb");
 const { signupTokenAuthority, tokenAuthority } = require("./API/middleware.js");
@@ -32,6 +35,7 @@ const {
 const { existsSync } = require("fs");
 const path = require("path");
 const { validateToken } = require("./utils/jwt.js");
+const { debounce } = require("./utils/common.js");
 
 const expressApp = express();
 
@@ -92,9 +96,21 @@ io.on("connection", async (socket) => {
   const { chatIds, chats, connections, hasData } = await connectionsData(
     loggedInUserId
   );
-  socket.emit(SOCKET_HANDLERS.CONNECTION_DATA, { hasData, chats, connections });
-
-  socket.join(chatIds);
+  socket.emit(SOCKET_HANDLERS.CONNECTION.ConnectionData, {
+    hasData,
+    chats,
+    connections,
+  });
+  if (chatIds.length > 0) {
+    await socket.join(chatIds);
+    socket
+      .to(chatIds)
+      .emit(SOCKET_HANDLERS.CONNECTION.StatusUpdate, loggedInUserId, {
+        status: STATUS_UPDATE.ONLINE,
+        last_active: "",
+      });
+    updateStatus(loggedInUserId, STATUS_UPDATE.ONLINE);
+  }
   socket.join(`${loggedInUserId}-req`); //New Request Room
 
   socket.on(
@@ -137,6 +153,10 @@ io.on("connection", async (socket) => {
         });
     }
   );
+
+  socket.on(SOCKET_HANDLERS.CHAT.JoinRoom, (chatId) => {
+    socket.join(chatId);
+  });
 
   socket.on(SOCKET_HANDLERS.CHAT.TypingUpdate, (chat_id, author) => {
     if (chat_id && author) {
@@ -194,6 +214,31 @@ io.on("connection", async (socket) => {
       updateUnseenMsgCount(toReceiverId, seenByUserId, false);
     }
   );
+
+  socket.on(SOCKET_HANDLERS.CHAT.ClearAll, async ({ chatId, fromId, toId }) => {
+    await clearChat(chatId, fromId, toId);
+    socket.to(chatId).emit(SOCKET_HANDLERS.CHAT.ClearAll, chatId, fromId);
+  });
+
+  socket.on(
+    SOCKET_HANDLERS.CONNECTION.RemoveConnection,
+    async (chatId, { fromUserId, toUserId, toBlock }) => {
+      await deleteChat(chatId, fromUserId, toUserId, toBlock);
+      socket
+        .to(chatId)
+        .emit(SOCKET_HANDLERS.CONNECTION.RemoveConnection, fromUserId, chatId);
+    }
+  );
+  socket.on("disconnect", (reason) => {
+    socket
+      .to(chatIds)
+      .emit(
+        SOCKET_HANDLERS.CONNECTION.StatusUpdate,
+        (loggedInUserId,
+        { status: STATUS_UPDATE.OFFLINE, last_active: new Date() })
+      );
+    updateStatus(loggedInUserId, STATUS_UPDATE.OFFLINE);
+  });
 });
 
 //Assets

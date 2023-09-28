@@ -5,6 +5,7 @@ const {
   ProfileDataProjection,
   ProfileSearchResults,
 } = require("./projections.js");
+const { STATUS_UPDATE } = require("../utils/enums.js");
 
 const mongoDbClient = new MongoClient(
   `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
@@ -112,7 +113,7 @@ async function connectionsData(userId) {
     connections,
     chats: chatsArray,
     chatIds: chatIds.map((objectId) => objectId.toString()),
-    hasData: contactIds.length > 0,
+    hasData: contactIds.length > 0 && chatsArray.length > 0,
   };
 }
 
@@ -287,6 +288,90 @@ async function updateUnseenMsgCount(senderId, receiverId, INCREASE = true) {
     update
   );
 }
+
+async function clearChat(chat_id, from, to) {
+  return await Promise.all([
+    chatsCollection.updateOne(
+      {
+        _id: new ObjectId(chat_id),
+      },
+      {
+        $set: {
+          messages: [],
+        },
+      }
+    ),
+    usersCollection.updateOne(
+      {
+        _id: new ObjectId(to),
+      },
+      {
+        $set: {
+          [`connections.${from}.unseen_messages_count`]: 0,
+        },
+      }
+    ),
+  ]);
+}
+
+async function deleteChat(chatId, fromId, connectionId, toBlock = false) {
+  if (chatId) {
+    const updateQuerySender = {
+      $unset: {
+        [`connections.${connectionId}`]: "",
+      },
+    };
+    const receiverQuery = {
+      $unset: {
+        [`connections.${fromId}`]: "",
+      },
+    };
+    if (toBlock) {
+      updateQuerySender["$push"] = {
+        blocked_users: new ObjectId(connectionId),
+      };
+    }
+    await Promise.all([
+      usersCollection.bulkWrite([
+        {
+          updateOne: {
+            filter: {
+              _id: new ObjectId(fromId),
+            },
+            update: updateQuerySender,
+          },
+        },
+        {
+          updateOne: {
+            filter: {
+              _id: new ObjectId(connectionId),
+            },
+            update: receiverQuery,
+          },
+        },
+      ]),
+      chatsCollection.deleteOne({
+        _id: new ObjectId(chatId),
+      }),
+    ]);
+  }
+  return;
+}
+
+async function updateStatus(userId, status) {
+  const update = {
+    $set: {
+      status,
+      last_active: status === STATUS_UPDATE.OFFLINE ? new Date() : "",
+    },
+  };
+  usersCollection.updateOne(
+    {
+      _id: new ObjectId(userId),
+    },
+    update
+  );
+}
 module.exports = {
   //MongoDBClient
   mongoDbClient,
@@ -299,6 +384,8 @@ module.exports = {
   getProfileById,
   getConnectionData,
   connectionsData,
+  clearChat,
+  deleteChat,
   verifyUser,
   getChat,
   isUsernameAvailable,
@@ -307,4 +394,5 @@ module.exports = {
   setProfilePictureUrl,
   findUser,
   updateUnseenMsgCount,
+  updateStatus,
 };
