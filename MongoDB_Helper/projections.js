@@ -1,10 +1,23 @@
-const ProfileDataProjection = Object.freeze({
+const UserProfileProjection = Object.freeze({
   _id: 0,
   id: "$_id",
   profile_type: "$profile_type",
   firstName: "$firstName",
   lastName: "$lastName",
   status: "$status",
+  about: "$about",
+  avatar: "$avatar",
+  last_active: "$last_active",
+  username: "$username",
+});
+
+const ProfileDataProjection = Object.freeze({
+  _id: 0,
+  id: "$_id",
+  profile_type: "$profile_type",
+  firstName: "$firstName",
+  lastName: "$lastName",
+  status: "$status.code",
   about: "$about",
   avatar: "$avatar",
   last_active: "$last_active",
@@ -22,4 +35,8 @@ const ProfileSearchResults = Object.freeze({
   status: "$status",
 });
 
-module.exports = { ProfileDataProjection, ProfileSearchResults };
+module.exports = {
+  UserProfileProjection,
+  ProfileDataProjection,
+  ProfileSearchResults,
+};

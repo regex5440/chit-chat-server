@@ -3,9 +3,9 @@ config();
 const { MongoClient, ObjectId } = require("mongodb");
 const {
   ProfileDataProjection,
-  ProfileSearchResults,
+  UserProfileProjection,
 } = require("./projections.js");
-const { STATUS_UPDATE } = require("../utils/enums.js");
+const { USER_STATUS } = require("../utils/enums.js");
 
 const mongoDbClient = new MongoClient(
   `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
@@ -21,11 +21,15 @@ const chatsCollection = db.collection("chats"),
         -> Functions that are used to provide the initial API response
  ?      User Profile
  */
-async function getProfileById(id) {
+async function getProfileById(id, myOwnProfile = false) {
   if (typeof id === "string") {
     return await usersCollection.findOne(
       { _id: new ObjectId(id) },
-      { projection: ProfileDataProjection }
+      {
+        projection: myOwnProfile
+          ? UserProfileProjection
+          : ProfileDataProjection,
+      }
     );
   } else if (Array.isArray(id)) {
     return await usersCollection
@@ -68,7 +72,7 @@ async function verifyUser(username, password) {
   return result;
 }
 
-//?     Connections
+//     Connections Data for initial request
 async function connectionsData(userId) {
   const { connections } = await usersCollection.findOne(
     { _id: new ObjectId(userId) },
@@ -362,7 +366,7 @@ async function updateStatus(userId, status) {
   const update = {
     $set: {
       status,
-      last_active: status === STATUS_UPDATE.OFFLINE ? new Date() : "",
+      last_active: status === USER_STATUS.OFFLINE ? new Date() : "",
     },
   };
   usersCollection.updateOne(

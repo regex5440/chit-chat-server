@@ -11,7 +11,7 @@ const { ErrorResponse, SuccessResponse } = require("../../utils/generator.js");
 
 const userProfileData = async (req, res) => {
   try {
-    const profileData = await getProfileById(req.userId);
+    const profileData = await getProfileById(req.userId, true);
     res.send(SuccessResponse({ data: profileData }));
   } catch (e) {
     console.log("/ProfileAPIError:", e);

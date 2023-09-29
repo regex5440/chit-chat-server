@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { Server } = require("socket.io");
 const { createServer } = require("http");
-const { SOCKET_HANDLERS, STATUS_UPDATE } = require("./utils/enums.js");
+const { SOCKET_HANDLERS, USER_STATUS } = require("./utils/enums.js");
 const {
   chatsCollection,
   mongoDbClient,
@@ -102,17 +102,24 @@ io.on("connection", async (socket) => {
     connections,
   });
   if (chatIds.length > 0) {
-    await socket.join(chatIds);
-    socket
-      .to(chatIds)
-      .emit(SOCKET_HANDLERS.CONNECTION.StatusUpdate, loggedInUserId, {
-        status: STATUS_UPDATE.ONLINE,
-        last_active: "",
-      });
-    updateStatus(loggedInUserId, STATUS_UPDATE.ONLINE);
+    socket.join(chatIds);
   }
   socket.join(`${loggedInUserId}-req`); //New Request Room
 
+  socket.on(
+    SOCKET_HANDLERS.CONNECTION.StatusUpdate,
+    (userId, { code, update_type }) => {
+      if (chatIds.length > 0) {
+        socket
+          .to(chatIds)
+          .emit(SOCKET_HANDLERS.CONNECTION.StatusUpdate, userId, {
+            code,
+            lastActive: code === USER_STATUS.OFFLINE ? new Date() : "",
+          });
+      }
+      updateStatus(userId, { code, update_type });
+    }
+  );
   socket.on(
     SOCKET_HANDLERS.CHAT.NewRequest,
     async ({ receiverId, messageObject }) => {
@@ -230,14 +237,14 @@ io.on("connection", async (socket) => {
     }
   );
   socket.on("disconnect", (reason) => {
-    socket
-      .to(chatIds)
-      .emit(
-        SOCKET_HANDLERS.CONNECTION.StatusUpdate,
-        (loggedInUserId,
-        { status: STATUS_UPDATE.OFFLINE, last_active: new Date() })
-      );
-    updateStatus(loggedInUserId, STATUS_UPDATE.OFFLINE);
+    // socket
+    //   .to(chatIds)
+    //   .emit(
+    //     SOCKET_HANDLERS.CONNECTION.StatusUpdate,
+    //     (loggedInUserId,
+    //     { status: USER_STATUS.OFFLINE, last_active: new Date() })
+    //   );
+    // updateStatus(loggedInUserId, USER_STATUS.OFFLINE);
   });
 });
 

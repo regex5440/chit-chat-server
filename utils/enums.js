@@ -1,4 +1,4 @@
-const STATUS_UPDATE = {
+const USER_STATUS = {
   ONLINE: "ONLINE",
   OFFLINE: "OFFLINE",
   AWAY: "AWAY",
@@ -26,4 +26,4 @@ const REGEXP = {
   email: /^[\w.!#$%&'*+/=?^_`{|}~-]+@[\w-]+(\.[\w-]+)+$/,
 };
 
-module.exports = { SOCKET_HANDLERS, REGEXP, STATUS_UPDATE };
+module.exports = { SOCKET_HANDLERS, REGEXP, USER_STATUS };
