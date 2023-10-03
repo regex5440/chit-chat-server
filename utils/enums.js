@@ -7,6 +7,7 @@ const USER_STATUS = {
 const SOCKET_HANDLERS = {
   CHAT: {
     JoinRoom: "newChatRequestedRoom",
+    LeaveRoom: "leaveDeleteChatRoom",
     NewMessage: "chatUpdate/message",
     TypingUpdate: "chatUpdate/typingStatus",
     NewRequest: "newChatRequest",

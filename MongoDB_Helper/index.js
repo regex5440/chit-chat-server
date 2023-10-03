@@ -362,11 +362,14 @@ async function deleteChat(chatId, fromId, connectionId, toBlock = false) {
   return;
 }
 
-async function updateStatus(userId, status) {
+async function updateStatus(userId, { code, update_type }) {
   const update = {
     $set: {
-      status,
-      last_active: status === USER_STATUS.OFFLINE ? new Date() : "",
+      status: {
+        code,
+        update_type,
+      },
+      last_active: code === USER_STATUS.OFFLINE ? new Date() : "",
     },
   };
   usersCollection.updateOne(

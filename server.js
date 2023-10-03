@@ -109,12 +109,16 @@ io.on("connection", async (socket) => {
   socket.on(
     SOCKET_HANDLERS.CONNECTION.StatusUpdate,
     (userId, { code, update_type }) => {
-      if (chatIds.length > 0) {
+      if (!code || !update_type) return;
+      if (socket.rooms.size > 2) {
+        const roomIds = new Set(socket.rooms);
+        roomIds.delete(`${loggedInUserId}-req`);
         socket
-          .to(chatIds)
+          .to([...roomIds])
           .emit(SOCKET_HANDLERS.CONNECTION.StatusUpdate, userId, {
             code,
-            lastActive: code === USER_STATUS.OFFLINE ? new Date() : "",
+            lastActive:
+              code === USER_STATUS.OFFLINE ? new Date().toISOString() : "",
           });
       }
       updateStatus(userId, { code, update_type });
@@ -163,6 +167,10 @@ io.on("connection", async (socket) => {
 
   socket.on(SOCKET_HANDLERS.CHAT.JoinRoom, (chatId) => {
     socket.join(chatId);
+  });
+
+  socket.on(SOCKET_HANDLERS.CHAT.LeaveRoom, (chat_id) => {
+    socket.leave(chat_id);
   });
 
   socket.on(SOCKET_HANDLERS.CHAT.TypingUpdate, (chat_id, author) => {
@@ -234,6 +242,7 @@ io.on("connection", async (socket) => {
       socket
         .to(chatId)
         .emit(SOCKET_HANDLERS.CONNECTION.RemoveConnection, fromUserId, chatId);
+      socket.leave(chatId);
     }
   );
   socket.on("disconnect", (reason) => {
