@@ -176,6 +176,7 @@ async function findUser(query) {
 }
 
 async function createNewAccount({
+  about,
   firstName,
   lastName,
   email,
@@ -185,9 +186,13 @@ async function createNewAccount({
 }) {
   const newUser = await usersCollection.insertOne({
     profile_type: "person",
+    about,
     firstName,
     lastName,
-    status: "ONLINE",
+    status: {
+      code: "ONLINE",
+      update_type: "auto",
+    },
     avatar: {
       url: "",
       key: profile_picture_url,

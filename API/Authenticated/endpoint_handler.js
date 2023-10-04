@@ -74,12 +74,13 @@ const imageHandler = async (req, res) => {
 
 const registerUser = async (req, res) => {
   try {
-    if (Object.keys(req.body).length === 5) {
-      const { usernameSelected, firstName, lastName, email, password } =
+    if (Object.keys(req.body).length === 6) {
+      const { about, usernameSelected, firstName, lastName, email, password } =
         req.body;
       const usernameAvailable = await isUsernameAvailable(usernameSelected);
       if (usernameAvailable && email === req.emailAddress) {
         const user = await createNewAccount({
+          about: about.trim(),
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.trim(),
