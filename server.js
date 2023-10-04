@@ -17,6 +17,7 @@ const {
   clearChat,
   deleteChat,
   updateStatus,
+  acceptMessageRequest,
 } = require("./MongoDB_Helper/index.js");
 const { ObjectId } = require("mongodb");
 const { signupTokenAuthority, tokenAuthority } = require("./API/middleware.js");
@@ -162,6 +163,16 @@ io.on("connection", async (socket) => {
             ...receiverConnectionData,
           },
         });
+    }
+  );
+
+  socket.on(
+    SOCKET_HANDLERS.CHAT.NewRequest_Accepted,
+    async (chatId, fromId) => {
+      await acceptMessageRequest(chatId, fromId);
+      socket
+        .to(chatId)
+        .emit(SOCKET_HANDLERS.CHAT.NewRequest_Accepted, chatId, fromId);
     }
   );
 

@@ -227,7 +227,7 @@ async function setProfilePictureUrl(user_id, url) {
 
 async function addConnection(fromContactId, toContactId, messageObject = {}) {
   const newChat = await createNewChat(
-    [new ObjectId(fromContactId), new ObjectId(toContactId)],
+    [new ObjectId(fromContactId)],
     messageObject
   );
   const newConnectionInSender = {
@@ -379,6 +379,19 @@ async function updateStatus(userId, { code, update_type }) {
     update
   );
 }
+
+async function acceptMessageRequest(chatId, accepterId) {
+  return chatsCollection.updateOne(
+    {
+      _id: new ObjectId(chatId),
+    },
+    {
+      $push: {
+        participants: new ObjectId(accepterId),
+      },
+    }
+  );
+}
 module.exports = {
   //MongoDBClient
   mongoDbClient,
@@ -388,6 +401,7 @@ module.exports = {
   // Functions
   addConnection,
   addMessage,
+  acceptMessageRequest,
   getProfileById,
   getConnectionData,
   connectionsData,
