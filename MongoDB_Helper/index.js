@@ -149,7 +149,7 @@ async function isUsernameAvailable(user_provided_username) {
 
 async function isEmailAlreadyRegistered(email_address) {
   const user = await usersCollection.findOne({ email: email_address });
-  return user ? true : false;
+  return user ? user._id : false;
 }
 
 async function findUser(query) {

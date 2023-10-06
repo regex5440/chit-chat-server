@@ -6,6 +6,7 @@ const { provideOTPAuth, verifyOTPAuth } = require("../utils/2stepauth.js");
 const { REGEXP } = require("../utils/enums.js");
 const { generateLoginToken, generateNewToken } = require("../utils/jwt.js");
 const { SuccessResponse, ErrorResponse } = require("../utils/generator.js");
+const { OAuth2Client } = require("google-auth-library");
 
 //Login Page
 const loginAuthentication = async (req, res) => {
@@ -26,6 +27,7 @@ const loginAuthentication = async (req, res) => {
       res.send(SuccessResponse({ data: token }));
     }
   }
+  res.status(400).json(ErrorResponse({ message: "Invalid credentials input" }));
 };
 
 //Signup Email authenticator
@@ -71,4 +73,47 @@ const emailValidation = async (req, res) => {
   }
 };
 
-module.exports = { loginAuthentication, emailValidation };
+// Google Signin handler
+const oAuthHandler = async (req, res) => {
+  const credential = req.body?.credential || undefined;
+  if (credential) {
+    try {
+      const client = new OAuth2Client();
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.OAuth_ID,
+      });
+      const payload = ticket.getPayload();
+      const registeredUser = await isEmailAlreadyRegistered(payload.email);
+      if (registeredUser) {
+        res.send(
+          SuccessResponse({
+            data: generateLoginToken(registeredUser),
+            message: "login",
+          })
+        );
+      } else {
+        res.send(
+          SuccessResponse({
+            data: {
+              emailVerified: payload.email_verified,
+              firstName: payload.given_name,
+              lastName: payload.family_name,
+              email: payload.email,
+              token: payload.email_verified
+                ? generateNewToken({ emailAddress: payload.email }, "signup")
+                : null,
+            },
+            message: "signup",
+          })
+        );
+      }
+    } catch (e) {
+      console.log("OAuthFailed", e);
+      res.status(500).send(ErrorResponse({ message: "Something went wrong!" }));
+    }
+  } else {
+    res.status(400).send(ErrorResponse({ message: "Invalid data" }));
+  }
+};
+module.exports = { loginAuthentication, emailValidation, oAuthHandler };

@@ -4,11 +4,9 @@ const { Server } = require("socket.io");
 const { createServer } = require("http");
 const { SOCKET_HANDLERS, USER_STATUS } = require("./utils/enums.js");
 const {
-  chatsCollection,
   mongoDbClient,
   addConnection,
   getChat,
-  findUser,
   getProfileById,
   getConnectionData,
   connectionsData,
@@ -19,10 +17,8 @@ const {
   updateStatus,
   acceptMessageRequest,
 } = require("./MongoDB_Helper/index.js");
-const { ObjectId } = require("mongodb");
 const { signupTokenAuthority, tokenAuthority } = require("./API/middleware.js");
 const {
-  connectionProfileData,
   userProfileData,
   userNameChecker,
   imageHandler,
@@ -32,11 +28,11 @@ const {
 const {
   emailValidation,
   loginAuthentication,
+  oAuthHandler,
 } = require("./API/endpoint_handler.js");
 const { existsSync } = require("fs");
 const path = require("path");
 const { validateToken } = require("./utils/jwt.js");
-const { debounce } = require("./utils/common.js");
 
 const expressApp = express();
 
@@ -60,6 +56,8 @@ expressApp.use("/email_verifier", emailValidation);
 expressApp.use("/signup/api", signupTokenAuthority);
 expressApp.get("/signup/api/username_checker", userNameChecker);
 expressApp.use("/signup/api/register", registerUser);
+
+expressApp.post("/oauth_process", oAuthHandler);
 
 // Login Endpoint
 expressApp.post("/login", loginAuthentication);

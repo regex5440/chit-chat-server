@@ -35,4 +35,8 @@ function validateToken(token, callback, type = "login") {
   }
 }
 
-module.exports = { generateNewToken, generateLoginToken, validateToken };
+module.exports = {
+  generateNewToken,
+  generateLoginToken,
+  validateToken,
+};
