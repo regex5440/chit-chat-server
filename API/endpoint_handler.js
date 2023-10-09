@@ -23,11 +23,14 @@ const loginAuthentication = async (req, res) => {
         ErrorResponse({ message: "Username or Password is not correct!" })
       );
     else {
-      let token = generateLoginToken(userId);
+      let token = await generateLoginToken(userId);
       res.send(SuccessResponse({ data: token }));
     }
+  } else {
+    res
+      .status(400)
+      .json(ErrorResponse({ message: "Invalid credentials input" }));
   }
-  res.status(400).json(ErrorResponse({ message: "Invalid credentials input" }));
 };
 
 //Signup Email authenticator
@@ -88,7 +91,7 @@ const oAuthHandler = async (req, res) => {
       if (registeredUser) {
         res.send(
           SuccessResponse({
-            data: generateLoginToken(registeredUser),
+            data: await generateLoginToken(registeredUser.toString()),
             message: "login",
           })
         );

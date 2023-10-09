@@ -68,6 +68,13 @@ expressApp.get("/api/me", userProfileData);
 expressApp.post("/api/imageUploader", imageHandler);
 expressApp.get("/api/findUser", userSearchHandler);
 
+expressApp.get("/api/log_out", async (req, res) => {
+  if (req.headers.authorization) {
+    await deleteRData(req.headers.authorization.split(" ")?.[1]);
+    res.send("ok");
+  }
+  res.status(401).send();
+});
 // Socket
 io.on("connection", async (socket) => {
   // console.log("Socket CONNECTED", socket.rooms);
@@ -79,12 +86,11 @@ io.on("connection", async (socket) => {
       throw new Error("Invalid Auth Token");
     }
     console.log({ authToken });
-    validateToken(authToken, (data) => {
-      if (data) {
-        loggedInUserId = data.userId;
-        console.log("VALIDATED SOCKET", loggedInUserId);
-      }
-    });
+    const data = await validateToken(authToken);
+    if (data.data) {
+      loggedInUserId = data.data.id;
+      console.log("VALIDATED SOCKET", loggedInUserId);
+    }
   } catch (e) {
     if (e) {
       socket.disconnect(true);

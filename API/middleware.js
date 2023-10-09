@@ -1,41 +1,46 @@
-const { validateToken } = require("../utils/jwt.js");
-const { ErrorResponse } = require("../utils/generator.js");
+const { validateToken, refreshToken } = require("../utils/jwt.js");
+const { ErrorResponse, SuccessResponse } = require("../utils/generator.js");
 
-const tokenAuthority = (req, res, next) => {
+const tokenAuthority = async (req, res, next) => {
   const authToken = req.headers.authorization?.split(" ")[1];
   if (authToken) {
-    validateToken(
-      authToken,
-      (data) => {
-        if (data) {
-          req.userId = data.userId;
-          next();
-        } else {
-          res.sendStatus(401);
+    if (/api\/?$/i.test(req.originalUrl)) {
+      try {
+        const newToken = await refreshToken(authToken);
+        if (newToken) {
+          res.send(SuccessResponse({ data: newToken }));
         }
-      },
-      "login"
-    );
+      } catch (e) {
+        res.send(500);
+      } finally {
+        res.send(ErrorResponse({ message: "Failed to refresh" }));
+        return;
+      }
+    }
+    validateToken(authToken, "login")
+      .then((data) => {
+        req.userId = data.data.id;
+        next();
+      })
+      .catch((r) => {
+        res.sendStatus(401);
+      });
   } else {
     res.sendStatus(401);
   }
 };
 
-const signupTokenAuthority = (req, res, next) => {
+const signupTokenAuthority = async (req, res, next) => {
   const authToken = req.headers.authorization?.split(" ")[1];
   if (authToken) {
-    validateToken(
-      authToken,
-      (data) => {
-        if (data) {
-          req.emailAddress = data.emailAddress;
-          next();
-        } else {
-          res.status(401).send(ErrorResponse({ message: "Session Expired!" }));
-        }
-      },
-      "signup"
-    );
+    validateToken(authToken, "signup")
+      .then(() => {
+        req.emailAddress = data.data.emailAddress;
+        next();
+      })
+      .catch(() => {
+        res.status(401).send(ErrorResponse({ message: "Session Expired!" }));
+      });
   } else {
     res.sendStatus(401);
   }

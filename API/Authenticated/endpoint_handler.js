@@ -88,7 +88,7 @@ const registerUser = async (req, res) => {
           username: usernameSelected.trim(),
           profile_picture_url: "", // To be updated with image url
         });
-        const token = generateLoginToken(user.insertedId);
+        const token = await generateLoginToken(user.insertedId);
         res.send(SuccessResponse({ data: token }));
       }
     }
