@@ -33,6 +33,7 @@ const {
 const { existsSync } = require("fs");
 const path = require("path");
 const { validateToken } = require("./utils/jwt.js");
+const { removeRData } = require("./Redis_Helper/index.js");
 
 const expressApp = express();
 
@@ -70,7 +71,7 @@ expressApp.get("/api/findUser", userSearchHandler);
 
 expressApp.get("/api/log_out", async (req, res) => {
   if (req.headers.authorization) {
-    await deleteRData(req.headers.authorization.split(" ")?.[1]);
+    await removeRData(req.headers.authorization.split(" ")?.[1]);
     res.send("ok");
   }
   res.status(401).send();

@@ -13,7 +13,6 @@ const tokenAuthority = async (req, res, next) => {
       } catch (e) {
         res.send(500);
       } finally {
-        res.send(ErrorResponse({ message: "Failed to refresh" }));
         return;
       }
     }
