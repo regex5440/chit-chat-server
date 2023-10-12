@@ -17,17 +17,20 @@ function generateNewToken(data = {}, type = "login") {
 async function generateLoginToken(userId) {
   const token = generateNewToken({ userId });
   const userData = await getProfileById(userId, true);
-  setRData(
-    token,
-    JSON.stringify({
-      id: userData.id,
-      email: userData.email,
-      username: userData.username,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-    })
-  );
-  return token;
+  if (userData) {
+    setRData(
+      token,
+      JSON.stringify({
+        id: userData.id,
+        email: userData.email,
+        username: userData.username,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+      })
+    );
+    return token;
+  }
+  return "";
 }
 
 async function refreshToken(oldToken) {

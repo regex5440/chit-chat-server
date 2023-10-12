@@ -23,8 +23,12 @@ const loginAuthentication = async (req, res) => {
         ErrorResponse({ message: "Username or Password is not correct!" })
       );
     else {
-      let token = await generateLoginToken(userId);
-      res.send(SuccessResponse({ data: token }));
+      let token = await generateLoginToken(userId.toString());
+      if (token) {
+        res.send(SuccessResponse({ data: token }));
+      } else {
+        res.send(ErrorResponse({ message: "Cannot login!" }));
+      }
     }
   } else {
     res
