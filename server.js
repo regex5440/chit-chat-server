@@ -16,6 +16,7 @@ const {
   deleteChat,
   updateStatus,
   acceptMessageRequest,
+  isUserRestricted,
 } = require("./MongoDB_Helper/index.js");
 const { signupTokenAuthority, tokenAuthority } = require("./API/middleware.js");
 const {
@@ -133,6 +134,15 @@ io.on("connection", async (socket) => {
   socket.on(
     SOCKET_HANDLERS.CHAT.NewRequest,
     async ({ receiverId, messageObject }) => {
+      const isBlocked = await isUserRestricted(loggedInUserId, receiverId);
+      if (isBlocked) {
+        socket.emit(
+          SOCKET_HANDLERS.CHAT.NewRequest_Failed,
+          "You can no longer message this contact"
+        );
+        return;
+      }
+
       const { chat_id } = await addConnection(
         loggedInUserId,
         receiverId,

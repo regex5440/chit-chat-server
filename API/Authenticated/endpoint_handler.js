@@ -8,6 +8,7 @@ const {
 const { generateLoginToken } = require("../../utils/jwt.js");
 const { uploadProfileImage } = require("../../CloudFlare_Helper/index.js");
 const { ErrorResponse, SuccessResponse } = require("../../utils/generator.js");
+const { ObjectId } = require("mongodb");
 
 const userProfileData = async (req, res) => {
   try {
@@ -48,6 +49,12 @@ const userSearchHandler = async (req, res) => {
       return;
     }
     const users = await findUser(req.query.q);
+    for (const i in users) {
+      if (users[i].blocked_users?.includes(req.userId)) {
+        users[i].restricted = true;
+      }
+      delete users[i].blocked_users;
+    }
     //TODO: Add group search
     res.send(
       SuccessResponse({

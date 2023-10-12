@@ -13,6 +13,7 @@ const SOCKET_HANDLERS = {
     NewRequest: "newChatRequest",
     NewRequest_Success: "newChatRequestSuccess",
     NewRequest_Accepted: "newMessageRequestAccepted",
+    NewRequest_Failed: "cannotSendRequest",
     SeenUpdate: "newSeenUpdate",
     ClearAll: "removeAllMessages",
   },

@@ -4,6 +4,7 @@ const { MongoClient, ObjectId } = require("mongodb");
 const {
   ProfileDataProjection,
   UserProfileProjection,
+  ProfileSearchResults,
 } = require("./projections.js");
 const { USER_STATUS } = require("../utils/enums.js");
 
@@ -168,7 +169,7 @@ async function findUser(query) {
         },
       },
       {
-        $project: ProfileDataProjection,
+        $project: ProfileSearchResults,
       },
     ])
     .toArray();
@@ -324,45 +325,45 @@ async function clearChat(chat_id, from, to) {
 }
 
 async function deleteChat(chatId, fromId, connectionId, toBlock = false) {
+  const updateQuerySender = {
+    $unset: {
+      [`connections.${connectionId}`]: "",
+    },
+  };
+  const receiverQuery = {
+    $unset: {
+      [`connections.${fromId}`]: "",
+    },
+  };
+  if (toBlock) {
+    updateQuerySender["$push"] = {
+      blocked_users: connectionId,
+    };
+  }
+  await Promise.all([
+    usersCollection.bulkWrite([
+      {
+        updateOne: {
+          filter: {
+            _id: new ObjectId(fromId),
+          },
+          update: updateQuerySender,
+        },
+      },
+      {
+        updateOne: {
+          filter: {
+            _id: new ObjectId(connectionId),
+          },
+          update: receiverQuery,
+        },
+      },
+    ]),
+  ]);
   if (chatId) {
-    const updateQuerySender = {
-      $unset: {
-        [`connections.${connectionId}`]: "",
-      },
-    };
-    const receiverQuery = {
-      $unset: {
-        [`connections.${fromId}`]: "",
-      },
-    };
-    if (toBlock) {
-      updateQuerySender["$push"] = {
-        blocked_users: new ObjectId(connectionId),
-      };
-    }
-    await Promise.all([
-      usersCollection.bulkWrite([
-        {
-          updateOne: {
-            filter: {
-              _id: new ObjectId(fromId),
-            },
-            update: updateQuerySender,
-          },
-        },
-        {
-          updateOne: {
-            filter: {
-              _id: new ObjectId(connectionId),
-            },
-            update: receiverQuery,
-          },
-        },
-      ]),
-      chatsCollection.deleteOne({
-        _id: new ObjectId(chatId),
-      }),
-    ]);
+    await chatsCollection.deleteOne({
+      _id: new ObjectId(chatId),
+    });
   }
   return;
 }
@@ -397,6 +398,18 @@ async function acceptMessageRequest(chatId, accepterId) {
     }
   );
 }
+
+async function isUserRestricted(restrictId, userId) {
+  const result = await usersCollection.findOne(
+    {
+      _id: new ObjectId(userId),
+      blocked_users: { $in: [restrictId] },
+    },
+    { projection: { _id: 1 } }
+  );
+
+  return result?._id ? true : false;
+}
 module.exports = {
   //MongoDBClient
   mongoDbClient,
@@ -416,6 +429,7 @@ module.exports = {
   getChat,
   isUsernameAvailable,
   isEmailAlreadyRegistered,
+  isUserRestricted,
   createNewAccount,
   setProfilePictureUrl,
   findUser,

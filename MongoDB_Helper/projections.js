@@ -25,6 +25,7 @@ const ProfileDataProjection = Object.freeze({
 });
 
 const ProfileSearchResults = Object.freeze({
+  _id: 0,
   id: "$_id",
   profile_type: "$profile_type",
   firstName: "$firstName",
@@ -33,6 +34,7 @@ const ProfileSearchResults = Object.freeze({
   about: "$about",
   username: "$username",
   status: "$status",
+  blocked_users: "$blocked_users",
 });
 
 module.exports = {
