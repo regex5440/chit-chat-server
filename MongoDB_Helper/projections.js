@@ -33,7 +33,6 @@ const ProfileSearchResults = Object.freeze({
   avatar: "$avatar",
   about: "$about",
   username: "$username",
-  status: "$status",
   blocked_users: "$blocked_users",
 });
 

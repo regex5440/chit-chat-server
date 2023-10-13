@@ -135,6 +135,7 @@ async function getChat(chatIds = [], initialMessagesCount = 20) {
           created_at: 1,
           authors_typing: 1,
           messages: { $slice: ["$messages", -1 * initialMessagesCount] },
+          created_by: 1,
         },
       }
     )
@@ -210,7 +211,7 @@ async function createNewAccount({
   return newUser;
 }
 
-async function createNewChat(participant_Ids = [], messageObject = null) {
+async function createNewChat(creatorId, messageObject = null) {
   if (messageObject) {
     messageObject.timestamp = new Date();
   }
@@ -219,7 +220,8 @@ async function createNewChat(participant_Ids = [], messageObject = null) {
     created_at: new Date(),
     last_updated: new Date(),
     messages: messageObject ? [messageObject] : [],
-    participants: participant_Ids,
+    participants: [new ObjectId(creatorId)],
+    created_by: new ObjectId(creatorId),
   });
   return newChat;
 }
@@ -232,10 +234,7 @@ async function setProfilePictureUrl(user_id, url) {
 }
 
 async function addConnection(fromContactId, toContactId, messageObject = {}) {
-  const newChat = await createNewChat(
-    [new ObjectId(fromContactId)],
-    messageObject
-  );
+  const newChat = await createNewChat(fromContactId, messageObject);
   const newConnectionInSender = {
     $set: {
       [`connections.${toContactId}`]: {
