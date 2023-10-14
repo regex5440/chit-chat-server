@@ -47,15 +47,13 @@ async function refreshToken(oldToken) {
 async function validateToken(token, type = "login") {
   return new Promise(async (resolve, reject) => {
     try {
-      if (type === "login") {
-      }
       jwt.verify(
         token,
         type === "login" ? process.env.TOKEN_KEY : process.env.SIGNUP_TOKEN_KEY,
         async function (err, data) {
           if (err) {
             reject(err);
-          } else {
+          } else if (type === "login") {
             const rData = await getRData(token);
             if (rData === null) {
               return false;
@@ -63,6 +61,10 @@ async function validateToken(token, type = "login") {
             const parsedRData = JSON.parse(rData);
             resolve({
               data: parsedRData,
+            });
+          } else {
+            resolve({
+              data,
             });
           }
         }
