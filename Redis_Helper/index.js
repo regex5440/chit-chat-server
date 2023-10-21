@@ -2,7 +2,9 @@ const redis = require("redis");
 
 const rClient = redis.createClient();
 
-rClient.connect();
+rClient.connect().catch((err) => {
+  console.log("RedisConnectionFailed", err);
+});
 
 async function getRData(key) {
   return rClient.get(key);

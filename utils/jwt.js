@@ -63,9 +63,7 @@ async function validateToken(token, type = "login") {
               data: parsedRData,
             });
           } else {
-            resolve({
-              data,
-            });
+            resolve(data);
           }
         }
       );

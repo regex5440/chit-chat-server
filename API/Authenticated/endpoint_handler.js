@@ -81,6 +81,7 @@ const imageHandler = async (req, res) => {
 
 const registerUser = async (req, res) => {
   try {
+    console.log(Object.keys(req.body).length);
     if (Object.keys(req.body).length === 6) {
       const { about, usernameSelected, firstName, lastName, email, password } =
         req.body;
@@ -95,7 +96,7 @@ const registerUser = async (req, res) => {
           username: usernameSelected.trim(),
           profile_picture_url: "", // To be updated with image url
         });
-        const token = await generateLoginToken(user.insertedId);
+        const token = await generateLoginToken(user.insertedId.toString());
         res.send(SuccessResponse({ data: token }));
       }
     }
