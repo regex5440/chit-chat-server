@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-echo "[Husky] Removing compiled Js files..." && npm run clean-compiled
+echo "No pre-commit hooks configured."
