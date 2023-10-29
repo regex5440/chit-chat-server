@@ -6,8 +6,9 @@
   "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "static": "npx tsc && node server.js",
-    "start": "concurrently \"npx tsc -w\" \"nodemon server.js\"",
+    "build": "npx tsc",
+    "static": "npx tsc && node build/server.js",
+    "start": "concurrently \"npx tsc -w\" \"nodemon -q build/server.js\"",
     "prepare": "husky install",
     "clean-compiled": "node clean-compiled.js"
   },
@@ -27,6 +28,10 @@
     "socket.io": "^4.6.1"
   },
   "devDependencies": {
+    "@types/express": "^4.17.20",
+    "@types/jsonwebtoken": "^9.0.4",
+    "@types/node": "^20.8.9",
+    "@types/nodemailer": "^6.4.13",
     "concurrently": "^8.2.0",
     "husky": "^8.0.3",
     "nodemon": "^2.0.22",

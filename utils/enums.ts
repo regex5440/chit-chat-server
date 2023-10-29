@@ -29,4 +29,4 @@ const REGEXP = {
   email: /^[\w.!#$%&'*+/=?^_`{|}~-]+@[\w-]+(\.[\w-]+)+$/,
 };
 
-module.exports = { SOCKET_HANDLERS, REGEXP, USER_STATUS };
+export { SOCKET_HANDLERS, REGEXP, USER_STATUS };

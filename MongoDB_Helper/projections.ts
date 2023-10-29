@@ -36,8 +36,4 @@ const ProfileSearchResults = Object.freeze({
   blocked_users: "$blocked_users",
 });
 
-module.exports = {
-  UserProfileProjection,
-  ProfileDataProjection,
-  ProfileSearchResults,
-};
+export { UserProfileProjection, ProfileDataProjection, ProfileSearchResults };

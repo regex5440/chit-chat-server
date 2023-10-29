@@ -1,9 +1,9 @@
-const express = require("express");
-const cors = require("cors");
-const { Server } = require("socket.io");
-const { createServer } = require("http");
-const { SOCKET_HANDLERS, USER_STATUS } = require("./utils/enums.js");
-const {
+import express from "express";
+import cors from "cors";
+import { Server } from "socket.io";
+import { createServer } from "http";
+import { SOCKET_HANDLERS, USER_STATUS } from "./utils/enums.js";
+import {
   mongoDbClient,
   addConnection,
   getChat,
@@ -17,80 +17,53 @@ const {
   updateStatus,
   acceptMessageRequest,
   isUserRestricted,
-} = require("./MongoDB_Helper/index.js");
-const { signupTokenAuthority, tokenAuthority } = require("./API/middleware.js");
-const {
-  userProfileData,
-  userNameChecker,
-  imageHandler,
-  registerUser,
-  userSearchHandler,
-} = require("./API/Authenticated/endpoint_handler.js");
-const {
-  emailValidation,
-  loginAuthentication,
-  oAuthHandler,
-} = require("./API/endpoint_handler.js");
-const { existsSync } = require("fs");
-const path = require("path");
-const { validateToken } = require("./utils/jwt.js");
-const { removeRData } = require("./Redis_Helper/index.js");
+} from "./MongoDB_Helper/index.js";
+import { signupTokenAuthority, tokenAuthority } from "./API/middleware.js";
+import route from "./Router";
+import { existsSync } from "fs";
+import path from "path";
+import { validateToken } from "./utils/jwt.js";
+import mongoose from "mongoose";
 
 const expressApp = express();
 
 const server = createServer(expressApp);
 const corsPolicy = {
-  origin: process.env.Client_URL,
-  credentials: true,
+  origin: "*", //process.env.Client_URL,
+  // credentials: false,
 };
 const io = new Server(server, {
   cors: corsPolicy,
 });
+expressApp.get('/test/:id', (req, res) => {
+  const data = getProfileById(req.params.id, true);
+  res.send(data);
+})
 
 expressApp.use(cors(corsPolicy));
 expressApp.use(express.json());
 expressApp.use(express.raw({ limit: "1mb" }));
 
-//Signup Endpoints
-expressApp.use("/email_verifier", emailValidation);
-
 //After email verification, use this API
 expressApp.use("/signup/api", signupTokenAuthority);
-expressApp.get("/signup/api/username_checker", userNameChecker);
-expressApp.use("/signup/api/register", registerUser);
-
-expressApp.post("/oauth_process", oAuthHandler);
-
-// Login Endpoint
-expressApp.post("/login", loginAuthentication);
-
 // Authenticated Login Endpoints
 expressApp.use("/api", tokenAuthority);
-expressApp.get("/api/me", userProfileData);
-expressApp.post("/api/imageUploader", imageHandler);
-expressApp.get("/api/findUser", userSearchHandler);
 
-expressApp.get("/api/log_out", async (req, res) => {
-  if (req.headers.authorization) {
-    await removeRData(req.headers.authorization.split(" ")?.[1]);
-    res.send("ok");
-  }
-  res.status(401).send();
-});
+expressApp.use(route);
 // Socket
 io.on("connection", async (socket) => {
   // console.log("Socket CONNECTED", socket.rooms);
   //TODO: Optimize Authorization if possible
-  let authToken = socket.handshake.headers.authorization.split(" ")[1];
+  let authToken = socket.handshake.headers.authorization?.split(" ")[1] || '';
   let loggedInUserId = "";
   try {
     if (authToken.length < 10) {
       throw new Error("Invalid Auth Token");
     }
     console.log({ authToken });
-    const data = await validateToken(authToken);
-    if (data.data) {
-      loggedInUserId = data.data.id;
+    const data = await validateToken(authToken, 'login');
+    if (data) {
+      loggedInUserId = data.id;
       console.log("VALIDATED SOCKET", loggedInUserId);
     }
   } catch (e) {
@@ -149,35 +122,38 @@ io.on("connection", async (socket) => {
         messageObject
       );
       socket.join(chat_id.toString());
-      const [
-        chats,
-        [profile1, profile2],
-        senderConnectionData,
-        receiverConnectionData,
-      ] = await Promise.all([
-        getChat([chat_id]),
-        getProfileById([loggedInUserId, receiverId]),
-        getConnectionData(loggedInUserId, receiverId),
-        getConnectionData(receiverId, loggedInUserId),
-      ]);
-      socket.emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
-        chat: chats[0],
-        connectionProfile: {
-          ...(profile1.id.toString() === loggedInUserId ? profile2 : profile1),
-          ...senderConnectionData,
-        },
-      });
-      socket
-        .to(`${receiverId}-req`)
-        .emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
+      if (chat_id) {
+        const [
+          chats,
+          [profile1, profile2],
+          senderConnectionData,
+          receiverConnectionData,
+        ] = await Promise.all([
+          getChat([chat_id]),
+          getProfileById([loggedInUserId, receiverId]),
+          getConnectionData(loggedInUserId, receiverId),
+          getConnectionData(receiverId, loggedInUserId),
+        ].filter(Boolean));
+
+        socket.emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
           chat: chats[0],
           connectionProfile: {
-            ...(profile1.id.toString() !== loggedInUserId
-              ? profile2
-              : profile1),
-            ...receiverConnectionData,
+            ...(profile1.id.toString() === loggedInUserId ? profile2 : profile1),
+            ...senderConnectionData,
           },
         });
+        socket
+          .to(`${receiverId}-req`)
+          .emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
+            chat: chats[0],
+            connectionProfile: {
+              ...(profile1.id.toString() !== loggedInUserId
+                ? profile2
+                : profile1),
+              ...receiverConnectionData,
+            },
+          });
+      }
     }
   );
 
@@ -303,6 +279,8 @@ expressApp.get("/assets/:assetId", async (req, res) => {
 });
 
 try {
+  if (!(process.env.DB_UserName || process.env.DB_PassWord)) throw new Error("DB_UserName or DB_PassWord is not defined");
+
   mongoDbClient.connect().then(() => {
     server.listen(5000, function () {
       console.log("Started at port 5000");

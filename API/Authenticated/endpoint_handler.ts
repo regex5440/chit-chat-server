@@ -1,17 +1,18 @@
-const {
+import {
   createNewAccount,
   isUsernameAvailable,
   setProfilePictureUrl,
   findUser,
   getProfileById,
-} = require("../../MongoDB_Helper/index.js");
-const { generateLoginToken } = require("../../utils/jwt.js");
-const { uploadProfileImage } = require("../../CloudFlare_Helper/index.js");
-const { ErrorResponse, SuccessResponse } = require("../../utils/generator.js");
-const { ObjectId } = require("mongodb");
+} from "../../MongoDB_Helper";
+import { generateLoginToken } from "../../utils/jwt";
+import { uploadProfileImage } from "../../CloudFlare_Helper";
+import { ErrorResponse, SuccessResponse } from "../../utils/generator";
+import { RequestHandler } from "../api_handler";
 
-const userProfileData = async (req, res) => {
+const userProfileData: RequestHandler = async (req, res) => {
   try {
+    if (!req.userId) return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
     const profileData = await getProfileById(req.userId, true);
     res.send(SuccessResponse({ data: profileData }));
   } catch (e) {
@@ -21,10 +22,10 @@ const userProfileData = async (req, res) => {
 };
 
 //Username Checker
-const userNameChecker = (req, res) => {
+const userNameChecker: RequestHandler = (req, res) => {
   try {
     if (req.query?.username) {
-      isUsernameAvailable(req.query.username).then((availability) => {
+      isUsernameAvailable(req.query.username as string).then((availability) => {
         res.send(
           SuccessResponse({
             data: { available: availability },
@@ -42,13 +43,13 @@ const userNameChecker = (req, res) => {
   }
 };
 
-const userSearchHandler = async (req, res) => {
+const userSearchHandler: RequestHandler = async (req, res) => {
   try {
     if (req.query.q?.length === 0) {
       res.status(400).send(ErrorResponse({ message: "Invalid request" }));
       return;
     }
-    const users = await findUser(req.query.q);
+    const users = await findUser(req.query.q as string);
     for (const i in users) {
       if (users[i].blocked_users?.includes(req.userId)) {
         users[i].restricted = true;
@@ -67,7 +68,8 @@ const userSearchHandler = async (req, res) => {
   }
 };
 
-const imageHandler = async (req, res) => {
+const imageHandler: RequestHandler = async (req, res) => {
+  if (!req.userId) return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
   const imageBlob = req.body;
   if (!imageBlob) {
     res.status(400).send(ErrorResponse({ message: "Image not provided!" }));
@@ -79,7 +81,7 @@ const imageHandler = async (req, res) => {
   res.send(SuccessResponse({ message: "ok" }));
 };
 
-const registerUser = async (req, res) => {
+const registerUser: RequestHandler = async (req, res) => {
   try {
     console.log(Object.keys(req.body).length);
     if (Object.keys(req.body).length === 6) {
@@ -107,7 +109,7 @@ const registerUser = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   userProfileData,
   userNameChecker,
   imageHandler,

@@ -1,5 +1,5 @@
-const { S3 } = require("aws-sdk");
-const { config } = require("dotenv");
+import { S3 } from "aws-sdk";
+import { config } from "dotenv";
 config();
 
 const s3 = new S3({
@@ -9,7 +9,10 @@ const s3 = new S3({
   signatureVersion: "v4",
 });
 
-const uploadProfileImage = async (user_Id, blob) => {
+const uploadProfileImage = async (user_Id: string, blob: Blob) => {
+  if (!process.env.S3_ProfileData_Bucket) {
+    throw new Error("S3_ProfileData_Bucket is not defined");
+  }
   return s3
     .upload({
       Bucket: process.env.S3_ProfileData_Bucket,
@@ -20,6 +23,5 @@ const uploadProfileImage = async (user_Id, blob) => {
     })
     .promise();
 };
-0.0;
 
-module.exports = { uploadProfileImage };
+export { uploadProfileImage };

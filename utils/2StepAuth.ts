@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer");
+import nodemailer from "nodemailer";
 const OTPAuth: {
   [ip_address: string]: {
     code_list: Set<number>;
@@ -6,6 +6,8 @@ const OTPAuth: {
     lastRequest: Date;
   };
 } = {};
+//TODO: Use redis to perform OTP Authentication rather than global variable
+
 
 const mailTransporter = nodemailer.createTransport({
   host: "smtpout.secureserver.net",
@@ -100,4 +102,4 @@ function OTPAuthCleaner() {
   }
 }
 
-module.exports = { provideOTPAuth, verifyOTPAuth };
+export { provideOTPAuth, verifyOTPAuth };

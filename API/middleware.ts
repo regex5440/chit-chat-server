@@ -1,7 +1,9 @@
-const { validateToken, refreshToken } = require("../utils/jwt.js");
-const { ErrorResponse, SuccessResponse } = require("../utils/generator.js");
+import { validateToken, refreshToken } from "../utils/jwt";
+import { ErrorResponse, SuccessResponse } from "../utils/generator";
+import { MiddleWare } from "./api_handler";
 
-const tokenAuthority = async (req, res, next) => {
+
+const tokenAuthority: MiddleWare = async (req, res, next) => {
   const authToken = req.headers.authorization?.split(" ")[1];
   if (authToken) {
     if (/api\/?$/i.test(req.originalUrl)) {
@@ -16,9 +18,10 @@ const tokenAuthority = async (req, res, next) => {
         return;
       }
     }
+
     validateToken(authToken, "login")
       .then((data) => {
-        req.userId = data.data.id;
+        req.userId = data.id;
         next();
       })
       .catch((r) => {
@@ -29,7 +32,7 @@ const tokenAuthority = async (req, res, next) => {
   }
 };
 
-const signupTokenAuthority = async (req, res, next) => {
+const signupTokenAuthority: MiddleWare = async (req, res, next) => {
   const authToken = req.headers.authorization?.split(" ")[1];
   if (authToken) {
     validateToken(authToken, "signup")
@@ -45,4 +48,4 @@ const signupTokenAuthority = async (req, res, next) => {
   }
 };
 
-module.exports = { tokenAuthority, signupTokenAuthority };
+export { tokenAuthority, signupTokenAuthority };

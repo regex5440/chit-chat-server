@@ -1,15 +1,16 @@
-const {
+import {
   isEmailAlreadyRegistered,
   verifyUser,
-} = require("../MongoDB_Helper/index.js");
-const { provideOTPAuth, verifyOTPAuth } = require("../utils/2stepauth.js");
-const { REGEXP } = require("../utils/enums.js");
-const { generateLoginToken, generateNewToken } = require("../utils/jwt.js");
-const { SuccessResponse, ErrorResponse } = require("../utils/generator.js");
-const { OAuth2Client } = require("google-auth-library");
+} from "../MongoDB_Helper";
+import { provideOTPAuth, verifyOTPAuth } from "../utils/2StepAuth";
+import { REGEXP } from "../utils/enums";
+import { generateLoginToken, generateNewToken } from "../utils/jwt";
+import { SuccessResponse, ErrorResponse } from "../utils/generator";
+import { OAuth2Client } from "google-auth-library";
+import { RequestHandler } from "./api_handler";
 
 //Login Page
-const loginAuthentication = async (req, res) => {
+const loginAuthentication: RequestHandler = async (req, res) => {
   const { username, password } = req.body;
   if (username && password) {
     const { userExists, credentialsMatch, userId } = await verifyUser(
@@ -38,8 +39,9 @@ const loginAuthentication = async (req, res) => {
 };
 
 //Signup Email authenticator
-const emailValidation = async (req, res) => {
+const emailValidation: RequestHandler = async (req, res) => {
   try {
+    if (!req.ip) return;
     const { emailAddress, code, resend } = req.body;
     if (!code) {
       if (!REGEXP.email.test(emailAddress)) {
@@ -81,7 +83,7 @@ const emailValidation = async (req, res) => {
 };
 
 // Google Signin handler
-const oAuthHandler = async (req, res) => {
+const oAuthHandler: RequestHandler = async (req, res) => {
   const credential = req.body?.credential || undefined;
   if (credential) {
     try {
@@ -91,6 +93,7 @@ const oAuthHandler = async (req, res) => {
         audience: process.env.OAuth_ID,
       });
       const payload = ticket.getPayload();
+      if (payload?.email === undefined) throw new Error("No data from Google");
       const registeredUser = await isEmailAlreadyRegistered(payload.email);
       if (registeredUser) {
         res.send(
@@ -123,4 +126,4 @@ const oAuthHandler = async (req, res) => {
     res.status(400).send(ErrorResponse({ message: "Invalid data" }));
   }
 };
-module.exports = { loginAuthentication, emailValidation, oAuthHandler };
+export { loginAuthentication, emailValidation, oAuthHandler };

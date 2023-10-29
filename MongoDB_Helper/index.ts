@@ -1,30 +1,33 @@
-const { config } = require("dotenv");
+import { config } from "dotenv";
 config();
-const { MongoClient, ObjectId } = require("mongodb");
-const {
+import { MongoClient, ObjectId, UpdateFilter } from "mongodb";
+import {
   ProfileDataProjection,
   UserProfileProjection,
   ProfileSearchResults,
-} = require("./projections.js");
-const { USER_STATUS } = require("../utils/enums.js");
+} from "./projections";
+import { USER_STATUS } from "../utils/enums";
+import { type } from "os";
 
 const mongoDbClient = new MongoClient(
   `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
-    process.env.DB_PassWord
+    process.env.DB_PassWord || ''
   )}@cluster0.qsbznrs.mongodb.net/?retryWrites=true&w=majority`
 );
 const db = mongoDbClient.db("chit-chat");
 const chatsCollection = db.collection("chats"),
   usersCollection = db.collection("users");
 
+type MessageObject = { timestamp: string | Date, type: 'text', text: string, sender_id: string }
 /*
  !    API Functions
         -> Functions that are used to provide the initial API response
  ?      User Profile
  */
-async function getProfileById(id, myOwnProfile = false) {
+async function getProfileById<T extends string | string[]>(id: T, myOwnProfile = false) {
+  let data: any = null;
   if (typeof id === "string") {
-    return await usersCollection.findOne(
+    data = await usersCollection.findOne(
       { _id: new ObjectId(id) },
       {
         projection: myOwnProfile
@@ -33,7 +36,7 @@ async function getProfileById(id, myOwnProfile = false) {
       }
     );
   } else if (Array.isArray(id)) {
-    return await usersCollection
+    data = await usersCollection
       .find(
         {
           _id: {
@@ -46,18 +49,23 @@ async function getProfileById(id, myOwnProfile = false) {
       )
       .toArray();
   }
+
+  if (data) {
+    return data as (T extends string ? keyof typeof UserProfileProjection : keyof typeof UserProfileProjection[])
+  }
+  return data;
 }
 
-async function getConnectionData(userId, connectionId) {
-  const { connectionData } = await usersCollection.findOne(
+async function getConnectionData(userId: string, connectionId: string) {
+  const data = await usersCollection.findOne(
     { _id: new ObjectId(userId) },
     { projection: { _id: 0, connectionData: `$connections.${connectionId}` } }
-  );
-  return connectionData;
+  )
+  return data?.connectionData;
 }
 
 //?   Login
-async function verifyUser(username, password) {
+async function verifyUser(username: string, password: string) {
   const user = await usersCollection.findOne({
     $or: [{ username }, { email: username }],
   });
@@ -67,18 +75,25 @@ async function verifyUser(username, password) {
     console.log(user.password, password);
     if (user.password === password) {
       result.credentialsMatch = true;
-      result.userId = user._id;
+      result.userId = user._id.toString();
     }
   }
   return result;
 }
 
 //     Connections Data for initial request
-async function connectionsData(userId) {
-  const { connections } = await usersCollection.findOne(
+async function connectionsData(userId: string) {
+  const data = await usersCollection.findOne(
     { _id: new ObjectId(userId) },
     { projection: { _id: 0, connections: 1 } }
   );
+  if (!data) return { connections: {}, chats: [], chatIds: [], hasData: false };
+  const connections: {
+    [key: string]: {
+      chat_id: string,
+      unseen_messages_count: number,
+    }
+  } = data.connections;
 
   const contactIds = Object.keys(connections).map((id) => new ObjectId(id));
   const contactsUnseenMsgCountCommand = {
@@ -96,7 +111,9 @@ async function connectionsData(userId) {
     )
     .toArray();
 
-  const seenByPropertyMapped = {};
+  const seenByPropertyMapped: {
+    [userId: string]: boolean
+  } = {};
   contactsArray.forEach((contact) => {
     //*  Adding profileData for each connection
     seenByPropertyMapped[connections[contact.id].chat_id] =
@@ -106,7 +123,7 @@ async function connectionsData(userId) {
   });
 
   const chatIds = Object.values(connections).map(
-    ({ chat_id }) => new ObjectId(chat_id)
+    (chat) => new ObjectId((chat as { chat_id: string }).chat_id)
   );
 
   const chatsArray = await getChat(chatIds);
@@ -122,7 +139,7 @@ async function connectionsData(userId) {
   };
 }
 
-async function getChat(chatIds = [], initialMessagesCount = 20) {
+async function getChat(chatIds: ObjectId[] = [], initialMessagesCount = 20) {
   return await chatsCollection //*  Providing chat data with last 20 messages
     .find(
       { _id: { $in: chatIds } },
@@ -142,19 +159,19 @@ async function getChat(chatIds = [], initialMessagesCount = 20) {
     .toArray();
 }
 
-async function isUsernameAvailable(user_provided_username) {
+async function isUsernameAvailable(user_provided_username: string) {
   const user = await usersCollection.findOne({
     username: user_provided_username,
   });
   return !user ? true : false;
 }
 
-async function isEmailAlreadyRegistered(email_address) {
+async function isEmailAlreadyRegistered(email_address: string) {
   const user = await usersCollection.findOne({ email: email_address });
   return user ? user._id : false;
 }
 
-async function findUser(query) {
+async function findUser(query: string) {
   const users = await usersCollection
     .aggregate([
       {
@@ -185,6 +202,14 @@ async function createNewAccount({
   password,
   username,
   profile_picture_url,
+}: {
+  about: string,
+  firstName: string,
+  lastName: string,
+  email: string,
+  password: string,
+  username: string,
+  profile_picture_url: string,
 }) {
   const newUser = await usersCollection.insertOne({
     profile_type: "person",
@@ -211,7 +236,7 @@ async function createNewAccount({
   return newUser;
 }
 
-async function createNewChat(creatorId, messageObject = null) {
+async function createNewChat(creatorId: string, messageObject: MessageObject | null = null) {
   if (messageObject) {
     messageObject.timestamp = new Date();
   }
@@ -226,14 +251,14 @@ async function createNewChat(creatorId, messageObject = null) {
   return newChat;
 }
 
-async function setProfilePictureUrl(user_id, url) {
+async function setProfilePictureUrl(user_id: string, url: string) {
   return usersCollection.updateOne(
     { _id: new ObjectId(user_id) },
     { $set: { "avatar.url": url } }
   );
 }
 
-async function addConnection(fromContactId, toContactId, messageObject = {}) {
+async function addConnection(fromContactId: string, toContactId: string, messageObject: MessageObject) {
   const newChat = await createNewChat(fromContactId, messageObject);
   const newConnectionInSender = {
     $set: {
@@ -275,7 +300,7 @@ async function addConnection(fromContactId, toContactId, messageObject = {}) {
   };
 }
 
-async function addMessage(chat_id, messageObject) {
+async function addMessage(chat_id: string, messageObject: MessageObject) {
   await chatsCollection.updateOne(
     { _id: new ObjectId(chat_id) },
     {
@@ -284,7 +309,7 @@ async function addMessage(chat_id, messageObject) {
     }
   );
 }
-async function updateUnseenMsgCount(senderId, receiverId, INCREASE = true) {
+async function updateUnseenMsgCount(senderId: string, receiverId: string, INCREASE = true) {
   const update = {
     [INCREASE ? "$inc" : "$set"]: {
       [`connections.${senderId}.unseen_messages_count`]: INCREASE ? 1 : 0,
@@ -298,7 +323,7 @@ async function updateUnseenMsgCount(senderId, receiverId, INCREASE = true) {
   );
 }
 
-async function clearChat(chat_id, from, to) {
+async function clearChat(chat_id: string, from: string, to: string) {
   return await Promise.all([
     chatsCollection.updateOne(
       {
@@ -323,8 +348,8 @@ async function clearChat(chat_id, from, to) {
   ]);
 }
 
-async function deleteChat(chatId, fromId, connectionId, toBlock = false) {
-  const updateQuerySender = {
+async function deleteChat(chatId: string, fromId: string, connectionId: string, toBlock = false) {
+  const updateQuerySender: UpdateFilter<Document> | UpdateFilter<Document>[] = {
     $unset: {
       [`connections.${connectionId}`]: "",
     },
@@ -346,7 +371,7 @@ async function deleteChat(chatId, fromId, connectionId, toBlock = false) {
           filter: {
             _id: new ObjectId(fromId),
           },
-          update: updateQuerySender,
+          update: [updateQuerySender],
         },
       },
       {
@@ -367,8 +392,8 @@ async function deleteChat(chatId, fromId, connectionId, toBlock = false) {
   return;
 }
 
-async function updateStatus(userId, { code, update_type }) {
-  const update = {
+async function updateStatus(userId: string, { code, update_type }: { code: keyof typeof USER_STATUS, update_type: 'auto' | 'manual' }) {
+  const update: UpdateFilter<Document> | Partial<Document> = {
     $set: {
       status: {
         code,
@@ -385,7 +410,7 @@ async function updateStatus(userId, { code, update_type }) {
   );
 }
 
-async function acceptMessageRequest(chatId, accepterId) {
+async function acceptMessageRequest(chatId: string, accepterId: string) {
   return chatsCollection.updateOne(
     {
       _id: new ObjectId(chatId),
@@ -398,7 +423,7 @@ async function acceptMessageRequest(chatId, accepterId) {
   );
 }
 
-async function isUserRestricted(restrictId, userId) {
+async function isUserRestricted(restrictId: string, userId: string) {
   const result = await usersCollection.findOne(
     {
       _id: new ObjectId(userId),
@@ -409,7 +434,7 @@ async function isUserRestricted(restrictId, userId) {
 
   return result?._id ? true : false;
 }
-module.exports = {
+export {
   //MongoDBClient
   mongoDbClient,
   //Collections
