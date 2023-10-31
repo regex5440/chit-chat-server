@@ -18,7 +18,7 @@ const db = mongoDbClient.db("chit-chat");
 const chatsCollection = db.collection("chats"),
   usersCollection = db.collection("users");
 
-type MessageObject = { timestamp: string | Date, type: 'text', text: string, sender_id: string }
+type MessageObject = { timestamp: string | Date, type: 'text', text: string, sender_id: string, id?: ObjectId, seenByRecipients?: ObjectId[] }
 /*
  !    API Functions
         -> Functions that are used to provide the initial API response
@@ -239,6 +239,8 @@ async function createNewAccount({
 async function createNewChat(creatorId: string, messageObject: MessageObject | null = null) {
   if (messageObject) {
     messageObject.timestamp = new Date();
+    messageObject.id = new ObjectId();
+    messageObject.seenByRecipients = [];
   }
   const newChat = await chatsCollection.insertOne({
     authors_typing: [],
@@ -301,11 +303,26 @@ async function addConnection(fromContactId: string, toContactId: string, message
 }
 
 async function addMessage(chat_id: string, messageObject: MessageObject) {
+  const id = new ObjectId();
   await chatsCollection.updateOne(
     { _id: new ObjectId(chat_id) },
     {
-      $push: { messages: messageObject },
+      $push: { messages: { ...messageObject, id } },
       $set: { last_updated: messageObject.timestamp },
+    }
+  )
+  return id.toString();
+}
+async function updateSeenMessages(chat_id: string, seenById: string, messageId: string) {
+  return await chatsCollection.updateOne(
+    {
+      _id: new ObjectId(chat_id),
+      "messages.id": new ObjectId(messageId),
+    },
+    {
+      $addToSet: {
+        "messages.$.seenByRecipients": new ObjectId(seenById),
+      },
     }
   );
 }
@@ -349,7 +366,7 @@ async function clearChat(chat_id: string, from: string, to: string) {
 }
 
 async function deleteChat(chatId: string, fromId: string, connectionId: string, toBlock = false) {
-  const updateQuerySender: UpdateFilter<Document> | UpdateFilter<Document>[] = {
+  const updateQuerySender = {
     $unset: {
       [`connections.${connectionId}`]: "",
     },
@@ -371,7 +388,7 @@ async function deleteChat(chatId: string, fromId: string, connectionId: string, 
           filter: {
             _id: new ObjectId(fromId),
           },
-          update: [updateQuerySender],
+          update: updateQuerySender,
         },
       },
       {
@@ -443,6 +460,7 @@ export {
   // Functions
   addConnection,
   addMessage,
+  updateSeenMessages,
   acceptMessageRequest,
   getProfileById,
   getConnectionData,

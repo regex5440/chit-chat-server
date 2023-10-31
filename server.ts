@@ -17,6 +17,7 @@ import {
   updateStatus,
   acceptMessageRequest,
   isUserRestricted,
+  updateSeenMessages,
 } from "./MongoDB_Helper/index.js";
 import { signupTokenAuthority, tokenAuthority } from "./API/middleware.js";
 import route from "./Router";
@@ -200,11 +201,12 @@ io.on("connection", async (socket) => {
 
   socket.on(
     SOCKET_HANDLERS.CHAT.NewMessage,
-    ({ chat_id, receiverId, messageObject }) => {
+    async ({ chat_id, receiverId, messageObject }) => {
       let currentTime = new Date();
       messageObject.timestamp = currentTime;
+      messageObject.seenByRecipients = [];
       try {
-        Promise.all([
+        const data = await Promise.all([
           addMessage(chat_id, messageObject),
           updateUnseenMsgCount(messageObject.sender_id, receiverId),
         ]);
@@ -212,23 +214,26 @@ io.on("connection", async (socket) => {
           SOCKET_HANDLERS.CHAT.NewMessage,
           chat_id,
           currentTime,
-          messageObject
+          { ...messageObject, id: data[0] }
         );
       } catch (e) {
         console.log("MessageTransferFailed:", e);
+        socket.emit(SOCKET_HANDLERS.CHAT.NewMessage_Failed, chat_id);
       }
     }
   );
 
   socket.on(
     SOCKET_HANDLERS.CHAT.SeenUpdate,
-    (chat_id, seenByUserId, toReceiverId) => {
+    async (chat_id: string, seenByUserId: string, toReceiverId: string, messageId: string) => {
+      const data = await Promise.all([updateSeenMessages(chat_id, seenByUserId, messageId), updateUnseenMsgCount(toReceiverId, seenByUserId, false)]);
+      console.log(data);
       io.to(chat_id).emit(
         SOCKET_HANDLERS.CHAT.SeenUpdate,
         chat_id,
-        seenByUserId
+        seenByUserId,
+        messageId
       );
-      updateUnseenMsgCount(toReceiverId, seenByUserId, false);
     }
   );
 

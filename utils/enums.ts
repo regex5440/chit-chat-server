@@ -9,6 +9,7 @@ const SOCKET_HANDLERS = {
     JoinRoom: "newChatRequestedRoom",
     LeaveRoom: "leaveDeleteChatRoom",
     NewMessage: "chatUpdate/message",
+    NewMessage_Failed: "chatUpdate/messageFailed",
     TypingUpdate: "chatUpdate/typingStatus",
     NewRequest: "newChatRequest",
     NewRequest_Success: "newChatRequestSuccess",
