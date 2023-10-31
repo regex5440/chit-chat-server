@@ -256,7 +256,7 @@ async function createNewChat(creatorId: string, messageObject: MessageObject | n
 async function setProfilePictureUrl(user_id: string, url: string) {
   return usersCollection.updateOne(
     { _id: new ObjectId(user_id) },
-    { $set: { "avatar.url": url } }
+    { $set: { "avatar.key": url } }
   );
 }
 
