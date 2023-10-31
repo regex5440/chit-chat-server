@@ -441,15 +441,18 @@ async function acceptMessageRequest(chatId: string, accepterId: string) {
 }
 
 async function isUserRestricted(restrictId: string, userId: string) {
-  const result = await usersCollection.findOne(
+  const result = await Promise.all([usersCollection.findOne(
     {
       _id: new ObjectId(userId),
       blocked_users: { $in: [restrictId] },
     },
     { projection: { _id: 1 } }
-  );
+  ), usersCollection.findOne({
+    _id: new ObjectId(restrictId),
+    blocked_users: { $in: [userId] },
+  }, { projection: { _id: 1 } })]);
 
-  return result?._id ? true : false;
+  return (result && (result[0]?._id || result[1]?._id)) ? true : false;
 }
 export {
   //MongoDBClient

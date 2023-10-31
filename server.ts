@@ -36,10 +36,6 @@ const corsPolicy = {
 const io = new Server(server, {
   cors: corsPolicy,
 });
-expressApp.get('/test/:id', (req, res) => {
-  const data = getProfileById(req.params.id, true);
-  res.send(data);
-})
 
 expressApp.use(cors(corsPolicy));
 expressApp.use(express.json());
