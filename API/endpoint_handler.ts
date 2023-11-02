@@ -1,13 +1,10 @@
-import {
-  isEmailAlreadyRegistered,
-  verifyUser,
-} from "../MongoDB_Helper";
+import { isEmailAlreadyRegistered, verifyUser } from "../MongoDB_Helper";
 import { provideOTPAuth, verifyOTPAuth } from "../utils/2StepAuth";
 import { REGEXP } from "../utils/enums";
 import { generateLoginToken, generateNewToken } from "../utils/jwt";
 import { SuccessResponse, ErrorResponse } from "../utils/generator";
 import { OAuth2Client } from "google-auth-library";
-import { RequestHandler } from "./api_handler";
+import { RequestHandler } from "../@types";
 
 //Login Page
 const loginAuthentication: RequestHandler = async (req, res) => {

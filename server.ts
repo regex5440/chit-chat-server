@@ -51,14 +51,14 @@ expressApp.use(route);
 io.on("connection", async (socket) => {
   // console.log("Socket CONNECTED", socket.rooms);
   //TODO: Optimize Authorization if possible
-  let authToken = socket.handshake.headers.authorization?.split(" ")[1] || '';
+  let authToken = socket.handshake.headers.authorization?.split(" ")[1] || "";
   let loggedInUserId = "";
   try {
     if (authToken.length < 10) {
       throw new Error("Invalid Auth Token");
     }
     console.log({ authToken });
-    const data = await validateToken(authToken, 'login');
+    const data = await validateToken(authToken, "login");
     if (data) {
       loggedInUserId = data.id;
       console.log("VALIDATED SOCKET", loggedInUserId);
@@ -125,17 +125,21 @@ io.on("connection", async (socket) => {
           [profile1, profile2],
           senderConnectionData,
           receiverConnectionData,
-        ] = await Promise.all([
-          getChat([chat_id]),
-          getProfileById([loggedInUserId, receiverId]),
-          getConnectionData(loggedInUserId, receiverId),
-          getConnectionData(receiverId, loggedInUserId),
-        ].filter(Boolean));
+        ] = await Promise.all(
+          [
+            getChat([chat_id]),
+            getProfileById([loggedInUserId, receiverId]),
+            getConnectionData(loggedInUserId, receiverId),
+            getConnectionData(receiverId, loggedInUserId),
+          ].filter(Boolean)
+        );
 
         socket.emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
           chat: chats[0],
           connectionProfile: {
-            ...(profile1.id.toString() === loggedInUserId ? profile2 : profile1),
+            ...(profile1.id.toString() === loggedInUserId
+              ? profile2
+              : profile1),
             ...senderConnectionData,
           },
         });
@@ -221,8 +225,16 @@ io.on("connection", async (socket) => {
 
   socket.on(
     SOCKET_HANDLERS.CHAT.SeenUpdate,
-    async (chat_id: string, seenByUserId: string, toReceiverId: string, messageId: string) => {
-      const data = await Promise.all([updateSeenMessages(chat_id, seenByUserId, messageId), updateUnseenMsgCount(toReceiverId, seenByUserId, false)]);
+    async (
+      chat_id: string,
+      seenByUserId: string,
+      toReceiverId: string,
+      messageId: string
+    ) => {
+      const data = await Promise.all([
+        updateSeenMessages(chat_id, seenByUserId, messageId),
+        updateUnseenMsgCount(toReceiverId, seenByUserId, false),
+      ]);
       console.log(data);
       io.to(chat_id).emit(
         SOCKET_HANDLERS.CHAT.SeenUpdate,
@@ -280,7 +292,8 @@ expressApp.get("/assets/:assetId", async (req, res) => {
 });
 
 try {
-  if (!(process.env.DB_UserName || process.env.DB_PassWord)) throw new Error("DB_UserName or DB_PassWord is not defined");
+  if (!(process.env.DB_UserName || process.env.DB_PassWord))
+    throw new Error("DB_UserName or DB_PassWord is not defined");
 
   mongoDbClient.connect().then(() => {
     server.listen(5000, function () {

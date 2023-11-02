@@ -8,7 +8,7 @@ import {
 import { generateLoginToken } from "../../utils/jwt";
 import { uploadProfileImage } from "../../CloudFlare_Helper";
 import { ErrorResponse, SuccessResponse } from "../../utils/generator";
-import { RequestHandler } from "../api_handler";
+import { RequestHandler } from "../../@types";
 
 const userProfileData: RequestHandler = async (req, res) => {
   try {
