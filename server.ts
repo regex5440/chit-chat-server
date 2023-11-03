@@ -18,6 +18,8 @@ import {
   acceptMessageRequest,
   isUserRestricted,
   updateSeenMessages,
+  deleteMessage,
+  updateMessage,
 } from "./MongoDB_Helper/index.js";
 import { signupTokenAuthority, tokenAuthority } from "./API/middleware.js";
 import route from "./Router";
@@ -25,6 +27,7 @@ import { existsSync } from "fs";
 import path from "path";
 import { validateToken } from "./utils/jwt.js";
 import mongoose from "mongoose";
+import { MessageUpdate } from "./@types/index.js";
 
 const expressApp = express();
 
@@ -220,6 +223,43 @@ io.on("connection", async (socket) => {
         console.log("MessageTransferFailed:", e);
         socket.emit(SOCKET_HANDLERS.CHAT.NewMessage_Failed, chat_id);
       }
+    }
+  );
+
+  socket.on(
+    SOCKET_HANDLERS.CHAT.MESSAGE.Delete,
+    async (
+      chat_id: string,
+      messageId: string,
+      fromId: string,
+      forAll = false
+    ) => {
+      await deleteMessage(chat_id, messageId, fromId, forAll);
+      if (forAll) {
+        io.to(chat_id).emit(
+          SOCKET_HANDLERS.CHAT.MESSAGE.Delete,
+          chat_id,
+          messageId
+        );
+      }
+    }
+  );
+
+  socket.on(
+    SOCKET_HANDLERS.CHAT.MESSAGE.Edit,
+    async (
+      chat_id: string,
+      messageId: string,
+      update: MessageUpdate,
+      fromId: string
+    ) => {
+      await updateMessage(chat_id, messageId, update, fromId);
+      io.to(chat_id).emit(
+        SOCKET_HANDLERS.CHAT.MESSAGE.Edit,
+        chat_id,
+        messageId,
+        update
+      );
     }
   );
 

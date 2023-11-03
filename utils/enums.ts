@@ -17,6 +17,10 @@ const SOCKET_HANDLERS = {
     NewRequest_Failed: "cannotSendRequest",
     SeenUpdate: "newSeenUpdate",
     ClearAll: "removeAllMessages",
+    MESSAGE: {
+      Delete: "deleteMessage",
+      Edit: "editMessage",
+    },
   },
   CONNECTION: {
     ConnectionData: "connectionsWithChat",

@@ -8,7 +8,7 @@ import {
 } from "./projections";
 import { USER_STATUS } from "../utils/enums";
 import { type } from "os";
-import { MessageObject } from "../@types";
+import { MessageObject, MessageUpdate } from "../@types";
 
 const mongoDbClient = new MongoClient(
   `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
@@ -493,6 +493,64 @@ async function isUserRestricted(restrictId: string, userId: string) {
 
   return result && (result[0]?._id || result[1]?._id) ? true : false;
 }
+
+async function deleteMessage(
+  chatId: string,
+  messageId: string,
+  fromId: string,
+  forAll = false
+) {
+  const params = forAll
+    ? [
+        {
+          _id: new ObjectId(chatId),
+        },
+        {
+          $pull: {
+            messages: { id: new ObjectId(messageId), sender_id: fromId },
+          },
+        },
+      ]
+    : [
+        {
+          _id: new ObjectId(chatId),
+          "messages.id": new ObjectId(messageId),
+        },
+        {
+          $addToSet: {
+            "messages.$.deletedFor": new ObjectId(fromId),
+          },
+        },
+      ];
+  return chatsCollection.updateOne(params[0], params[1]);
+}
+
+async function updateMessage(
+  chatId: string,
+  messageId: string,
+  update: MessageUpdate,
+  fromId: string
+) {
+  return chatsCollection.updateOne(
+    {
+      _id: new ObjectId(chatId),
+    },
+    {
+      $set: {
+        "messages.$[message].text": update.text,
+        "messages.$[message].edited": true,
+      },
+    },
+    {
+      arrayFilters: [
+        {
+          "message.id": new ObjectId(messageId),
+          "message.sender_id": fromId,
+        },
+      ],
+    }
+  );
+}
 export {
   //MongoDBClient
   mongoDbClient,
@@ -502,6 +560,8 @@ export {
   // Functions
   addConnection,
   addMessage,
+  deleteMessage,
+  updateMessage,
   updateSeenMessages,
   acceptMessageRequest,
   getProfileById,

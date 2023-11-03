@@ -1,3 +1,8 @@
+import { NextFunction, Request, Response } from "express";
+import { ParamsDictionary } from "express-serve-static-core";
+import QueryString from "qs";
+
+//Chat Types
 export type MessageObject = {
   timestamp: string | Date;
   type: "text"; //TODO: More types to be added later
@@ -6,12 +11,14 @@ export type MessageObject = {
   id?: ObjectId;
   seenByRecipients?: ObjectId[];
   edited?: boolean;
+  deletedFor?: ObjectId[];
 };
 
-import { NextFunction, Request, Response } from "express";
-import { ParamsDictionary } from "express-serve-static-core";
-import QueryString from "qs";
+export type MessageUpdate = {
+  text: string;
+};
 
+// API Types
 declare global {
   namespace Express {
     interface Request {
