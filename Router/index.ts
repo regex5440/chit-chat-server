@@ -1,18 +1,21 @@
 import {
-    userProfileData,
-    userNameChecker,
-    imageHandler,
-    registerUser,
-    userSearchHandler,
+  userProfileData,
+  userNameChecker,
+  imageHandler,
+  registerUser,
+  userSearchHandler,
+  blockedUsersRequestHandler,
+  blockHandler,
+  unblockHandler,
 } from "../API/Authenticated/endpoint_handler";
 import {
-    emailValidation,
-    loginAuthentication,
-    oAuthHandler,
+  emailValidation,
+  loginAuthentication,
+  oAuthHandler,
 } from "../API/endpoint_handler";
 import { removeRData } from "../Redis_Helper";
 
-import express from 'express';
+import express from "express";
 
 const route = express.Router();
 
@@ -31,13 +34,16 @@ route.post("/login", loginAuthentication);
 route.get("/api/me", userProfileData);
 route.post("/api/imageUploader", imageHandler);
 route.get("/api/findUser", userSearchHandler);
+route.get("/api/blocked_users", blockedUsersRequestHandler);
+route.get("/api/block", blockHandler);
+route.get("/api/unblock", unblockHandler);
 
 route.get("/api/log_out", async (req, res) => {
-    if (req.headers.authorization) {
-        await removeRData(req.headers.authorization.split(" ")?.[1]);
-        res.send("ok");
-    }
-    res.status(401).send();
+  if (req.headers.authorization) {
+    await removeRData(req.headers.authorization.split(" ")?.[1]);
+    res.send("ok");
+  }
+  res.status(401).send();
 });
 
 export default route;

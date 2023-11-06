@@ -8,7 +8,6 @@ const OTPAuth: {
 } = {};
 //TODO: Use redis to perform OTP Authentication rather than global variable
 
-
 const mailTransporter = nodemailer.createTransport({
   host: "smtpout.secureserver.net",
   port: 465,
@@ -33,7 +32,7 @@ const sendOTPMail = async (email: string, otp: number) => {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 </style>
-        <img alt="Chit Chat" style="display: block;margin: 0 auto;text-align: center;mix-blend-mode:color-burn; max-width: 100%;" src="https://w4d2rqjv-5000.inc1.devtunnels.ms//assets/chit-chat-logo-regular"/>
+        <img alt="Chit Chat" style="display: block;margin: 0 auto;text-align: center;mix-blend-mode:color-burn; max-width: 100%;" src="https://cc.static.hdxdev.in/logos/chit-chat-logo.jpg"/>
         <h2 style="color: #00287f;margin-bottom: 20px;text-decoration: underline;text-underline-position: under;">Email Authentication</h2>
         <p style="color: #555; line-height: 1.6;">Hi there!</p>
         <p style="color: #555; line-height: 1.6;">Your One-Time Password (OTP) for email verification is: <code style="color: #00287f;text-align: center;display: block;font-size: 32px;margin-top: 10px;letter-spacing: 25px;">${otp}</code></p>

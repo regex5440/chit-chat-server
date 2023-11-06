@@ -4,6 +4,9 @@ import {
   setProfilePictureUrl,
   findUser,
   getProfileById,
+  blockUser,
+  unblockUser,
+  getBlockedUsers,
 } from "../../MongoDB_Helper";
 import { generateLoginToken } from "../../utils/jwt";
 import { uploadProfileImage } from "../../CloudFlare_Helper";
@@ -12,7 +15,8 @@ import { RequestHandler } from "../../@types";
 
 const userProfileData: RequestHandler = async (req, res) => {
   try {
-    if (!req.userId) return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
+    if (!req.userId)
+      return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
     const profileData = await getProfileById(req.userId, true);
     res.send(SuccessResponse({ data: profileData }));
   } catch (e) {
@@ -43,6 +47,45 @@ const userNameChecker: RequestHandler = (req, res) => {
   }
 };
 
+const blockedUsersRequestHandler: RequestHandler = async (req, res) => {
+  try {
+    if (req.userId) {
+      const blockedUsers = await getBlockedUsers(req.userId);
+      res.send(SuccessResponse({ data: blockedUsers }));
+    }
+    res.status(400).send(ErrorResponse({ message: "Invalid request" }));
+  } catch (e) {
+    console.log(e);
+    res.status(500).send(ErrorResponse({ message: "Something went wrong!" }));
+  }
+};
+
+const blockHandler: RequestHandler = async (req, res) => {
+  try {
+    if (req.userId && req.query?.id) {
+      await blockUser(req.userId, req.query.id as string);
+      res.send(SuccessResponse({ message: "ok" }));
+    }
+    res.status(400).send(ErrorResponse({ message: "Invalid request" }));
+  } catch (e) {
+    console.log(e);
+    res.status(500).send(ErrorResponse({ message: "Something went wrong!" }));
+  }
+};
+
+const unblockHandler: RequestHandler = async (req, res) => {
+  try {
+    if (req.userId && req.query?.id) {
+      await unblockUser(req.userId, req.query.id as string);
+      res.send(SuccessResponse({ message: "ok" }));
+    }
+    res.status(400).send(ErrorResponse({ message: "Invalid request" }));
+  } catch (e) {
+    console.log(e);
+    res.status(500).send(ErrorResponse({ message: "Something went wrong!" }));
+  }
+};
+
 const userSearchHandler: RequestHandler = async (req, res) => {
   try {
     if (req.query.q?.length === 0) {
@@ -69,7 +112,8 @@ const userSearchHandler: RequestHandler = async (req, res) => {
 };
 
 const imageHandler: RequestHandler = async (req, res) => {
-  if (!req.userId) return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
+  if (!req.userId)
+    return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
   const imageBlob = req.body;
   if (!imageBlob) {
     res.status(400).send(ErrorResponse({ message: "Image not provided!" }));
@@ -115,4 +159,7 @@ export {
   imageHandler,
   registerUser,
   userSearchHandler,
+  blockedUsersRequestHandler,
+  blockHandler,
+  unblockHandler,
 };

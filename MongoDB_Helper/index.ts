@@ -405,7 +405,7 @@ async function deleteChat(
   };
   if (toBlock) {
     updateQuerySender["$push"] = {
-      blocked_users: connectionId,
+      blocked_users: new ObjectId(connectionId),
     };
   }
   await Promise.all([
@@ -478,14 +478,14 @@ async function isUserRestricted(restrictId: string, userId: string) {
     usersCollection.findOne(
       {
         _id: new ObjectId(userId),
-        blocked_users: { $in: [restrictId] },
+        blocked_users: { $in: [new ObjectId(restrictId)] },
       },
       { projection: { _id: 1 } }
     ),
     usersCollection.findOne(
       {
         _id: new ObjectId(restrictId),
-        blocked_users: { $in: [userId] },
+        blocked_users: { $in: [new ObjectId(userId)] },
       },
       { projection: { _id: 1 } }
     ),
@@ -551,6 +551,52 @@ async function updateMessage(
     }
   );
 }
+
+async function getBlockedUsers(userId: string) {
+  const data = await usersCollection.findOne(
+    { _id: new ObjectId(userId) },
+    { projection: { _id: 0, blocked_users: 1 } }
+  );
+  if (data && data.blocked_users?.length > 0) {
+    return await usersCollection
+      .find(
+        {
+          _id: {
+            $in: data.blocked_users,
+          },
+        },
+        { projection: ProfileDataProjection }
+      )
+      .toArray();
+  }
+  return [];
+}
+
+async function blockUser(userId: string, blockId: string) {
+  return usersCollection.updateOne(
+    {
+      _id: new ObjectId(userId),
+    },
+    {
+      $addToSet: {
+        blocked_users: new ObjectId(blockId),
+      },
+    }
+  );
+}
+
+async function unblockUser(userId: string, blockedId: string) {
+  return usersCollection.updateOne(
+    {
+      _id: new ObjectId(userId),
+    },
+    {
+      $pull: {
+        blocked_users: new ObjectId(blockedId),
+      },
+    }
+  );
+}
 export {
   //MongoDBClient
   mongoDbClient,
@@ -579,4 +625,7 @@ export {
   findUser,
   updateUnseenMsgCount,
   updateStatus,
+  getBlockedUsers,
+  blockUser,
+  unblockUser,
 };
