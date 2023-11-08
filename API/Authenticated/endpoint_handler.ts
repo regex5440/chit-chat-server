@@ -52,6 +52,7 @@ const blockedUsersRequestHandler: RequestHandler = async (req, res) => {
     if (req.userId) {
       const blockedUsers = await getBlockedUsers(req.userId);
       res.send(SuccessResponse({ data: blockedUsers }));
+      return;
     }
     res.status(400).send(ErrorResponse({ message: "Invalid request" }));
   } catch (e) {
@@ -64,7 +65,8 @@ const blockHandler: RequestHandler = async (req, res) => {
   try {
     if (req.userId && req.query?.id) {
       await blockUser(req.userId, req.query.id as string);
-      res.send(SuccessResponse({ message: "ok" }));
+      res.send(SuccessResponse({ message: "ok", data: req.query.id }));
+      return;
     }
     res.status(400).send(ErrorResponse({ message: "Invalid request" }));
   } catch (e) {
@@ -77,7 +79,8 @@ const unblockHandler: RequestHandler = async (req, res) => {
   try {
     if (req.userId && req.query?.id) {
       await unblockUser(req.userId, req.query.id as string);
-      res.send(SuccessResponse({ message: "ok" }));
+      res.send(SuccessResponse({ message: "ok", data: req.query.id }));
+      return;
     }
     res.status(400).send(ErrorResponse({ message: "Invalid request" }));
   } catch (e) {
