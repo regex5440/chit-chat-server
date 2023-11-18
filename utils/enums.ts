@@ -21,6 +21,7 @@ const SOCKET_HANDLERS = {
       Delete: "deleteMessage",
       Edit: "editMessage",
     },
+    AttachmentURL: "getSignedURL",
   },
   CONNECTION: {
     ConnectionData: "connectionsWithChat",

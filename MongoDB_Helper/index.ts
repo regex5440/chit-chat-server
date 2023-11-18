@@ -9,6 +9,7 @@ import {
 import { USER_STATUS } from "../utils/enums";
 import { type } from "os";
 import { MessageObject, MessageUpdate } from "../@types";
+import { getPostSignedURL } from "../CloudFlare_Helper";
 
 const mongoDbClient = new MongoClient(
   `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
@@ -76,7 +77,6 @@ async function verifyUser(username: string, password: string) {
   const result = { userExists: false, credentialsMatch: false, userId: "" };
   if (user) {
     result.userExists = true;
-    console.log(user.password, password);
     if (user.password === password) {
       result.credentialsMatch = true;
       result.userId = user._id.toString();
@@ -597,6 +597,33 @@ async function unblockUser(userId: string, blockedId: string) {
     }
   );
 }
+
+async function provideSignedURL(
+  chat_id: string,
+  filesInfo: {
+    name: string;
+    size: number;
+  }[]
+) {
+  const filesWithSignedURL: {
+    signed_url: string;
+    key: string;
+    file_name: string;
+  }[] = [];
+  for (const file of filesInfo) {
+    const fileID = new ObjectId();
+    const fileExtension = file.name.match(/\.[0-9a-z]+$/i)?.[0] || "";
+    const path = `chat_${chat_id}`;
+    const key = `cc_${fileID}${fileExtension}`;
+    const url = await getPostSignedURL(path, key, file.size);
+    filesWithSignedURL.push({
+      signed_url: url,
+      key: `${path}/${key}`,
+      file_name: file.name,
+    });
+  }
+  return filesWithSignedURL;
+}
 export {
   //MongoDBClient
   mongoDbClient,
@@ -628,4 +655,7 @@ export {
   getBlockedUsers,
   blockUser,
   unblockUser,
+
+  // Cloudflare
+  provideSignedURL,
 };

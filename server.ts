@@ -20,6 +20,7 @@ import {
   updateSeenMessages,
   deleteMessage,
   updateMessage,
+  provideSignedURL,
 } from "./MongoDB_Helper/index.js";
 import { signupTokenAuthority, tokenAuthority } from "./API/middleware.js";
 import route from "./Router";
@@ -28,6 +29,7 @@ import path from "path";
 import { validateToken } from "./utils/jwt.js";
 import mongoose from "mongoose";
 import { MessageUpdate } from "./@types/index.js";
+import { getRData } from "./Redis_Helper/index.js";
 
 const expressApp = express();
 
@@ -60,11 +62,9 @@ io.on("connection", async (socket) => {
     if (authToken.length < 10) {
       throw new Error("Invalid Auth Token");
     }
-    console.log({ authToken });
     const data = await validateToken(authToken, "login");
     if (data) {
       loggedInUserId = data.id;
-      console.log("VALIDATED SOCKET", loggedInUserId);
     }
   } catch (e) {
     if (e) {
@@ -104,6 +104,16 @@ io.on("connection", async (socket) => {
       updateStatus(userId, { code, update_type });
     }
   );
+
+  socket.on(
+    SOCKET_HANDLERS.CHAT.AttachmentURL,
+    async (chat_id: string, fileInfo: { name: string; size: number }[]) => {
+      if (chat_id && fileInfo.length > 0) {
+        const data = await provideSignedURL(chat_id, fileInfo);
+        socket.emit(SOCKET_HANDLERS.CHAT.AttachmentURL, data);
+      }
+    }
+  );
   socket.on(
     SOCKET_HANDLERS.CHAT.NewRequest,
     async ({ receiverId, messageObject }) => {
@@ -115,6 +125,7 @@ io.on("connection", async (socket) => {
         );
         return;
       }
+      delete messageObject.tempId;
 
       const { chat_id } = await addConnection(
         loggedInUserId,
@@ -209,6 +220,8 @@ io.on("connection", async (socket) => {
       messageObject.timestamp = currentTime;
       messageObject.seenByRecipients = [];
       try {
+        const messageTempId = messageObject.tempId;
+        delete messageObject.tempId;
         const data = await Promise.all([
           addMessage(chat_id, messageObject),
           updateUnseenMsgCount(messageObject.sender_id, receiverId),
@@ -217,7 +230,7 @@ io.on("connection", async (socket) => {
           SOCKET_HANDLERS.CHAT.NewMessage,
           chat_id,
           currentTime,
-          { ...messageObject, id: data[0] }
+          { ...messageObject, id: data[0], tempId: messageTempId }
         );
       } catch (e) {
         console.log("MessageTransferFailed:", e);
@@ -300,15 +313,23 @@ io.on("connection", async (socket) => {
       socket.leave(chatId);
     }
   );
-  socket.on("disconnect", (reason) => {
-    // socket
-    //   .to(chatIds)
-    //   .emit(
-    //     SOCKET_HANDLERS.CONNECTION.StatusUpdate,
-    //     (loggedInUserId,
-    //     { status: USER_STATUS.OFFLINE, last_active: new Date() })
-    //   );
-    // updateStatus(loggedInUserId, USER_STATUS.OFFLINE);
+  socket.on("disconnect", async (reason) => {
+    const rData = await getRData(
+      socket.handshake.headers.authorization?.split(" ")[1] || ""
+    );
+    if (rData) {
+      const parsedD = await JSON.parse(rData);
+      socket
+        .to(socket.rooms as any)
+        .emit(
+          SOCKET_HANDLERS.CONNECTION.StatusUpdate,
+          (parsedD.id, { status: USER_STATUS.OFFLINE, last_active: new Date() })
+        );
+      updateStatus(parsedD.id, {
+        code: "OFFLINE",
+        update_type: "auto",
+      });
+    }
   });
 });
 

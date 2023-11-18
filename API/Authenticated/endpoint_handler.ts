@@ -121,9 +121,9 @@ const imageHandler: RequestHandler = async (req, res) => {
   if (!imageBlob) {
     res.status(400).send(ErrorResponse({ message: "Image not provided!" }));
   }
-  const data = await uploadProfileImage(req.userId, imageBlob);
-  if (data) {
-    await setProfilePictureUrl(req.userId, data.Key);
+  const key = await uploadProfileImage(req.userId, imageBlob);
+  if (key) {
+    await setProfilePictureUrl(req.userId, key);
   }
   res.send(SuccessResponse({ message: "ok" }));
 };
