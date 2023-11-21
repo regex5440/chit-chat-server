@@ -35,8 +35,8 @@ const expressApp = express();
 
 const server = createServer(expressApp);
 const corsPolicy = {
-  origin: "*", //process.env.Client_URL,
-  // credentials: false,
+  origin: process.env.Client_URL,
+  credentials: false,
 };
 const io = new Server(server, {
   cors: corsPolicy,
