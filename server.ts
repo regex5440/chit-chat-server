@@ -27,7 +27,7 @@ import route from "./Router";
 import { existsSync } from "fs";
 import path from "path";
 import { validateToken } from "./utils/jwt.js";
-import mongoose from "mongoose";
+// import mongoose from "mongoose";
 import { MessageUpdate } from "./@types/index.js";
 import { getRData } from "./Redis_Helper/index.js";
 
@@ -56,7 +56,7 @@ expressApp.use(route);
 io.on("connection", async (socket) => {
   // console.log("Socket CONNECTED", socket.rooms);
   //TODO: Optimize Authorization if possible
-  let authToken = socket.handshake.headers.authorization?.split(" ")[1] || "";
+  const authToken = socket.handshake.headers.authorization?.split(" ")[1] || "";
   let loggedInUserId = "";
   try {
     if (authToken.length < 10) {
@@ -73,9 +73,7 @@ io.on("connection", async (socket) => {
     }
   }
 
-  const { chatIds, chats, connections, hasData } = await connectionsData(
-    loggedInUserId
-  );
+  const { chatIds, chats, connections, hasData } = await connectionsData(loggedInUserId);
   socket.emit(SOCKET_HANDLERS.CONNECTION.ConnectionData, {
     hasData,
     chats,
@@ -86,101 +84,66 @@ io.on("connection", async (socket) => {
   }
   socket.join(`${loggedInUserId}-req`); //New Request Room
 
-  socket.on(
-    SOCKET_HANDLERS.CONNECTION.StatusUpdate,
-    (userId, { code, update_type }) => {
-      if (!code || !update_type) return;
-      if (socket.rooms.size > 2) {
-        const roomIds = new Set(socket.rooms);
-        roomIds.delete(`${loggedInUserId}-req`);
-        socket
-          .to([...roomIds])
-          .emit(SOCKET_HANDLERS.CONNECTION.StatusUpdate, userId, {
-            code,
-            lastActive:
-              code === USER_STATUS.OFFLINE ? new Date().toISOString() : "",
-          });
-      }
-      updateStatus(userId, { code, update_type });
+  socket.on(SOCKET_HANDLERS.CONNECTION.StatusUpdate, (userId, { code, update_type }) => {
+    if (!code || !update_type) return;
+    if (socket.rooms.size > 2) {
+      const roomIds = new Set(socket.rooms);
+      roomIds.delete(`${loggedInUserId}-req`);
+      socket.to([...roomIds]).emit(SOCKET_HANDLERS.CONNECTION.StatusUpdate, userId, {
+        code,
+        lastActive: code === USER_STATUS.OFFLINE ? new Date().toISOString() : "",
+      });
     }
-  );
+    updateStatus(userId, { code, update_type });
+  });
 
-  socket.on(
-    SOCKET_HANDLERS.CHAT.AttachmentURL,
-    async (chat_id: string, fileInfo: { name: string; size: number }[]) => {
-      if (chat_id && fileInfo.length > 0) {
-        const data = await provideSignedURL(chat_id, fileInfo);
-        socket.emit(SOCKET_HANDLERS.CHAT.AttachmentURL, data);
-      }
+  socket.on(SOCKET_HANDLERS.CHAT.AttachmentURL, async (chat_id: string, fileInfo: { name: string; size: number }[]) => {
+    if (chat_id && fileInfo.length > 0) {
+      const data = await provideSignedURL(chat_id, fileInfo);
+      socket.emit(SOCKET_HANDLERS.CHAT.AttachmentURL, data);
     }
-  );
-  socket.on(
-    SOCKET_HANDLERS.CHAT.NewRequest,
-    async ({ receiverId, messageObject }) => {
-      const isBlocked = await isUserRestricted(loggedInUserId, receiverId);
-      if (isBlocked) {
-        socket.emit(
-          SOCKET_HANDLERS.CHAT.NewRequest_Failed,
-          "You can no longer message this contact"
-        );
-        return;
-      }
-      delete messageObject.tempId;
+  });
+  socket.on(SOCKET_HANDLERS.CHAT.NewRequest, async ({ receiverId, messageObject }) => {
+    const isBlocked = await isUserRestricted(loggedInUserId, receiverId);
+    if (isBlocked) {
+      socket.emit(SOCKET_HANDLERS.CHAT.NewRequest_Failed, "You can no longer message this contact");
+      return;
+    }
+    delete messageObject.tempId;
 
-      const { chat_id } = await addConnection(
-        loggedInUserId,
-        receiverId,
-        messageObject
+    const { chat_id } = await addConnection(loggedInUserId, receiverId, messageObject);
+    socket.join(chat_id.toString());
+    if (chat_id) {
+      const [chats, [profile1, profile2], senderConnectionData, receiverConnectionData] = await Promise.all(
+        [
+          getChat([chat_id]),
+          getProfileById([loggedInUserId, receiverId]),
+          getConnectionData(loggedInUserId, receiverId),
+          getConnectionData(receiverId, loggedInUserId),
+        ].filter(Boolean),
       );
-      socket.join(chat_id.toString());
-      if (chat_id) {
-        const [
-          chats,
-          [profile1, profile2],
-          senderConnectionData,
-          receiverConnectionData,
-        ] = await Promise.all(
-          [
-            getChat([chat_id]),
-            getProfileById([loggedInUserId, receiverId]),
-            getConnectionData(loggedInUserId, receiverId),
-            getConnectionData(receiverId, loggedInUserId),
-          ].filter(Boolean)
-        );
 
-        socket.emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
-          chat: chats[0],
-          connectionProfile: {
-            ...(profile1.id.toString() === loggedInUserId
-              ? profile2
-              : profile1),
-            ...senderConnectionData,
-          },
-        });
-        socket
-          .to(`${receiverId}-req`)
-          .emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
-            chat: chats[0],
-            connectionProfile: {
-              ...(profile1.id.toString() !== loggedInUserId
-                ? profile2
-                : profile1),
-              ...receiverConnectionData,
-            },
-          });
-      }
+      socket.emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
+        chat: chats[0],
+        connectionProfile: {
+          ...(profile1.id.toString() === loggedInUserId ? profile2 : profile1),
+          ...senderConnectionData,
+        },
+      });
+      socket.to(`${receiverId}-req`).emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
+        chat: chats[0],
+        connectionProfile: {
+          ...(profile1.id.toString() !== loggedInUserId ? profile2 : profile1),
+          ...receiverConnectionData,
+        },
+      });
     }
-  );
+  });
 
-  socket.on(
-    SOCKET_HANDLERS.CHAT.NewRequest_Accepted,
-    async (chatId, fromId) => {
-      await acceptMessageRequest(chatId, fromId);
-      socket
-        .to(chatId)
-        .emit(SOCKET_HANDLERS.CHAT.NewRequest_Accepted, chatId, fromId);
-    }
-  );
+  socket.on(SOCKET_HANDLERS.CHAT.NewRequest_Accepted, async (chatId, fromId) => {
+    await acceptMessageRequest(chatId, fromId);
+    socket.to(chatId).emit(SOCKET_HANDLERS.CHAT.NewRequest_Accepted, chatId, fromId);
+  });
 
   socket.on(SOCKET_HANDLERS.CHAT.JoinRoom, (chatId) => {
     socket.join(chatId);
@@ -192,9 +155,7 @@ io.on("connection", async (socket) => {
 
   socket.on(SOCKET_HANDLERS.CHAT.TypingUpdate, (chat_id, author) => {
     if (chat_id && author) {
-      socket
-        .to(chat_id)
-        .emit(SOCKET_HANDLERS.CHAT.TypingUpdate, chat_id, author);
+      socket.to(chat_id).emit(SOCKET_HANDLERS.CHAT.TypingUpdate, chat_id, author);
       /*
        * // TODO: It should be a throttling update from client.
        * Because if the user is just logged in and one of it's connections was typing then it won't be send to the logged in user. Because typing update was sent before they were logged in
@@ -213,119 +174,57 @@ io.on("connection", async (socket) => {
     }
   });
 
-  socket.on(
-    SOCKET_HANDLERS.CHAT.NewMessage,
-    async ({ chat_id, receiverId, messageObject }) => {
-      let currentTime = new Date();
-      messageObject.timestamp = currentTime;
-      messageObject.seenByRecipients = [];
-      try {
-        const messageTempId = messageObject.tempId;
-        delete messageObject.tempId;
-        const data = await Promise.all([
-          addMessage(chat_id, messageObject),
-          updateUnseenMsgCount(messageObject.sender_id, receiverId),
-        ]);
-        io.in(chat_id).emit(
-          SOCKET_HANDLERS.CHAT.NewMessage,
-          chat_id,
-          currentTime,
-          { ...messageObject, id: data[0], tempId: messageTempId }
-        );
-      } catch (e) {
-        console.log("MessageTransferFailed:", e);
-        socket.emit(SOCKET_HANDLERS.CHAT.NewMessage_Failed, chat_id);
-      }
+  socket.on(SOCKET_HANDLERS.CHAT.NewMessage, async ({ chat_id, receiverId, messageObject }) => {
+    const currentTime = new Date();
+    messageObject.timestamp = currentTime;
+    messageObject.seenByRecipients = [];
+    try {
+      const messageTempId = messageObject.tempId;
+      delete messageObject.tempId;
+      const data = await Promise.all([addMessage(chat_id, messageObject), updateUnseenMsgCount(messageObject.sender_id, receiverId)]);
+      io.in(chat_id).emit(SOCKET_HANDLERS.CHAT.NewMessage, chat_id, currentTime, { ...messageObject, id: data[0], tempId: messageTempId });
+    } catch (e) {
+      console.log("MessageTransferFailed:", e);
+      socket.emit(SOCKET_HANDLERS.CHAT.NewMessage_Failed, chat_id);
     }
-  );
+  });
 
-  socket.on(
-    SOCKET_HANDLERS.CHAT.MESSAGE.Delete,
-    async (
-      chat_id: string,
-      messageId: string,
-      fromId: string,
-      forAll = false
-    ) => {
-      //TODO: Remove attachments from bucket related to deleted message
-      await deleteMessage(chat_id, messageId, fromId, forAll);
-      if (forAll) {
-        io.to(chat_id).emit(
-          SOCKET_HANDLERS.CHAT.MESSAGE.Delete,
-          chat_id,
-          messageId
-        );
-      }
+  socket.on(SOCKET_HANDLERS.CHAT.MESSAGE.Delete, async (chat_id: string, messageId: string, fromId: string, forAll = false) => {
+    //TODO: Remove attachments from bucket related to deleted message
+    await deleteMessage(chat_id, messageId, fromId, forAll);
+    if (forAll) {
+      io.to(chat_id).emit(SOCKET_HANDLERS.CHAT.MESSAGE.Delete, chat_id, messageId);
     }
-  );
+  });
 
-  socket.on(
-    SOCKET_HANDLERS.CHAT.MESSAGE.Edit,
-    async (
-      chat_id: string,
-      messageId: string,
-      update: MessageUpdate,
-      fromId: string
-    ) => {
-      await updateMessage(chat_id, messageId, update, fromId);
-      io.to(chat_id).emit(
-        SOCKET_HANDLERS.CHAT.MESSAGE.Edit,
-        chat_id,
-        messageId,
-        update
-      );
-    }
-  );
+  socket.on(SOCKET_HANDLERS.CHAT.MESSAGE.Edit, async (chat_id: string, messageId: string, update: MessageUpdate, fromId: string) => {
+    await updateMessage(chat_id, messageId, update, fromId);
+    io.to(chat_id).emit(SOCKET_HANDLERS.CHAT.MESSAGE.Edit, chat_id, messageId, update);
+  });
 
-  socket.on(
-    SOCKET_HANDLERS.CHAT.SeenUpdate,
-    async (
-      chat_id: string,
-      seenByUserId: string,
-      toReceiverId: string,
-      messageId: string
-    ) => {
-      const data = await Promise.all([
-        updateSeenMessages(chat_id, seenByUserId, messageId),
-        updateUnseenMsgCount(toReceiverId, seenByUserId, false),
-      ]);
-      console.log(data);
-      io.to(chat_id).emit(
-        SOCKET_HANDLERS.CHAT.SeenUpdate,
-        chat_id,
-        seenByUserId,
-        messageId
-      );
-    }
-  );
+  socket.on(SOCKET_HANDLERS.CHAT.SeenUpdate, async (chat_id: string, seenByUserId: string, toReceiverId: string, messageId: string) => {
+    const data = await Promise.all([updateSeenMessages(chat_id, seenByUserId, messageId), updateUnseenMsgCount(toReceiverId, seenByUserId, false)]);
+    console.log(data);
+    io.to(chat_id).emit(SOCKET_HANDLERS.CHAT.SeenUpdate, chat_id, seenByUserId, messageId);
+  });
 
   socket.on(SOCKET_HANDLERS.CHAT.ClearAll, async ({ chatId, fromId, toId }) => {
     await clearChat(chatId, fromId, toId);
     socket.to(chatId).emit(SOCKET_HANDLERS.CHAT.ClearAll, chatId, fromId);
   });
 
-  socket.on(
-    SOCKET_HANDLERS.CONNECTION.RemoveConnection,
-    async (chatId, { fromUserId, toUserId, toBlock }) => {
-      await deleteChat(chatId, fromUserId, toUserId, toBlock);
-      socket
-        .to(chatId)
-        .emit(SOCKET_HANDLERS.CONNECTION.RemoveConnection, fromUserId, chatId);
-      socket.leave(chatId);
-    }
-  );
+  socket.on(SOCKET_HANDLERS.CONNECTION.RemoveConnection, async (chatId, { fromUserId, toUserId, toBlock }) => {
+    await deleteChat(chatId, fromUserId, toUserId, toBlock);
+    socket.to(chatId).emit(SOCKET_HANDLERS.CONNECTION.RemoveConnection, fromUserId, chatId);
+    socket.leave(chatId);
+  });
   socket.on("disconnect", async (reason) => {
-    const rData = await getRData(
-      socket.handshake.headers.authorization?.split(" ")[1] || ""
-    );
+    const rData = await getRData(socket.handshake.headers.authorization?.split(" ")[1] || "");
     if (rData) {
       const parsedD = await JSON.parse(rData);
       socket
         .to(socket.rooms as any)
-        .emit(
-          SOCKET_HANDLERS.CONNECTION.StatusUpdate,
-          (parsedD.id, { status: USER_STATUS.OFFLINE, last_active: new Date() })
-        );
+        .emit(SOCKET_HANDLERS.CONNECTION.StatusUpdate, (parsedD.id, { status: USER_STATUS.OFFLINE, last_active: new Date() }, reason));
       updateStatus(parsedD.id, {
         code: "OFFLINE",
         update_type: "auto",
@@ -354,8 +253,7 @@ expressApp.get("/assets/:assetId", async (req, res) => {
 });
 
 try {
-  if (!(process.env.DB_UserName || process.env.DB_PassWord))
-    throw new Error("DB_UserName or DB_PassWord is not defined");
+  if (!(process.env.DB_UserName || process.env.DB_PassWord)) throw new Error("DB_UserName or DB_PassWord is not defined");
 
   mongoDbClient.connect().then(() => {
     server.listen(5000, function () {

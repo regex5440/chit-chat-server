@@ -29,15 +29,9 @@ declare global {
 }
 
 export type MiddleWare = (
-  req: Request<
-    ParamsDictionary,
-    any,
-    any,
-    QueryString.ParsedQs,
-    Record<string, any>
-  >,
+  req: Request<ParamsDictionary, any, any, QueryString.ParsedQs, Record<string, any>>,
   res: Response<any>,
-  next: NextFunction
+  next: NextFunction,
 ) => void;
 
 export type RequestHandler = (req: Request, res: Response) => void;

@@ -23,7 +23,7 @@ const uploadProfileImage = async (user_Id: string, blob: Blob) => {
       Key,
       Body: blob,
       ContentType: "image/png",
-    })
+    }),
   );
   return Key;
 };
@@ -43,7 +43,7 @@ const getPostSignedURL = async (path: string, key: string, size: number) => {
     }),
     {
       expiresIn: 600,
-    }
+    },
   );
 };
 

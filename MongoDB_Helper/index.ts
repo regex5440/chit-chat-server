@@ -1,20 +1,15 @@
 import { config } from "dotenv";
 config();
 import { MongoClient, ObjectId, UpdateFilter } from "mongodb";
-import {
-  ProfileDataProjection,
-  UserProfileProjection,
-  ProfileSearchResults,
-} from "./projections";
+import { ProfileDataProjection, UserProfileProjection, ProfileSearchResults } from "./projections";
 import { USER_STATUS } from "../utils/enums";
-import { type } from "os";
 import { MessageObject, MessageUpdate } from "../@types";
 import { getPostSignedURL } from "../CloudFlare_Helper";
 
 const mongoDbClient = new MongoClient(
   `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
-    process.env.DB_PassWord || ""
-  )}@cluster0.qsbznrs.mongodb.net/?retryWrites=true&w=majority`
+    process.env.DB_PassWord || "",
+  )}@cluster0.qsbznrs.mongodb.net/?retryWrites=true&w=majority`,
 );
 const db = mongoDbClient.db("chit-chat");
 const chatsCollection = db.collection("chats"),
@@ -24,19 +19,14 @@ const chatsCollection = db.collection("chats"),
         -> Functions that are used to provide the initial API response
  ?      User Profile
  */
-async function getProfileById<T extends string | string[]>(
-  id: T,
-  myOwnProfile = false
-) {
+async function getProfileById<T extends string | string[]>(id: T, myOwnProfile = false) {
   let data: any = null;
   if (typeof id === "string") {
     data = await usersCollection.findOne(
       { _id: new ObjectId(id) },
       {
-        projection: myOwnProfile
-          ? UserProfileProjection
-          : ProfileDataProjection,
-      }
+        projection: myOwnProfile ? UserProfileProjection : ProfileDataProjection,
+      },
     );
   } else if (Array.isArray(id)) {
     data = await usersCollection
@@ -48,15 +38,13 @@ async function getProfileById<T extends string | string[]>(
         },
         {
           projection: ProfileDataProjection,
-        }
+        },
       )
       .toArray();
   }
 
   if (data) {
-    return data as T extends string
-      ? keyof typeof UserProfileProjection
-      : keyof (typeof UserProfileProjection)[];
+    return data as T extends string ? keyof typeof UserProfileProjection : keyof (typeof UserProfileProjection)[];
   }
   return data;
 }
@@ -64,7 +52,7 @@ async function getProfileById<T extends string | string[]>(
 async function getConnectionData(userId: string, connectionId: string) {
   const data = await usersCollection.findOne(
     { _id: new ObjectId(userId) },
-    { projection: { _id: 0, connectionData: `$connections.${connectionId}` } }
+    { projection: { _id: 0, connectionData: `$connections.${connectionId}` } },
   );
   return data?.connectionData;
 }
@@ -87,10 +75,7 @@ async function verifyUser(username: string, password: string) {
 
 //     Connections Data for initial request
 async function connectionsData(userId: string) {
-  const data = await usersCollection.findOne(
-    { _id: new ObjectId(userId) },
-    { projection: { _id: 0, connections: 1 } }
-  );
+  const data = await usersCollection.findOne({ _id: new ObjectId(userId) }, { projection: { _id: 0, connections: 1 } });
   if (!data) return { connections: {}, chats: [], chatIds: [], hasData: false };
   const connections: {
     [key: string]: {
@@ -111,7 +96,7 @@ async function connectionsData(userId: string) {
           ...ProfileDataProjection,
           ...contactsUnseenMsgCountCommand,
         },
-      }
+      },
     )
     .toArray();
 
@@ -120,15 +105,12 @@ async function connectionsData(userId: string) {
   } = {};
   contactsArray.forEach((contact) => {
     //*  Adding profileData for each connection
-    seenByPropertyMapped[connections[contact.id].chat_id] =
-      contact.unseen_messages_count === 0;
+    seenByPropertyMapped[connections[contact.id].chat_id] = contact.unseen_messages_count === 0;
     delete contact.unseen_messages_count;
     Object.assign(connections[contact.id], contact);
   });
 
-  const chatIds = Object.values(connections).map(
-    (chat) => new ObjectId((chat as { chat_id: string }).chat_id)
-  );
+  const chatIds = Object.values(connections).map((chat) => new ObjectId((chat as { chat_id: string }).chat_id));
 
   const chatsArray = await getChat(chatIds);
   chatsArray.forEach((chat, index) => {
@@ -158,7 +140,7 @@ async function getChat(chatIds: ObjectId[] = [], initialMessagesCount = 20) {
           messages: { $slice: ["$messages", -1 * initialMessagesCount] },
           created_by: 1,
         },
-      }
+      },
     )
     .toArray();
 }
@@ -240,10 +222,7 @@ async function createNewAccount({
   return newUser;
 }
 
-async function createNewChat(
-  creatorId: string,
-  messageObject: MessageObject | null = null
-) {
+async function createNewChat(creatorId: string, messageObject: MessageObject | null = null) {
   if (messageObject) {
     messageObject.timestamp = new Date();
     messageObject.id = new ObjectId();
@@ -261,17 +240,10 @@ async function createNewChat(
 }
 
 async function setProfilePictureUrl(user_id: string, url: string) {
-  return usersCollection.updateOne(
-    { _id: new ObjectId(user_id) },
-    { $set: { "avatar.key": url } }
-  );
+  return usersCollection.updateOne({ _id: new ObjectId(user_id) }, { $set: { "avatar.key": url } });
 }
 
-async function addConnection(
-  fromContactId: string,
-  toContactId: string,
-  messageObject: MessageObject
-) {
+async function addConnection(fromContactId: string, toContactId: string, messageObject: MessageObject) {
   const newChat = await createNewChat(fromContactId, messageObject);
   const newConnectionInSender = {
     $set: {
@@ -306,7 +278,7 @@ async function addConnection(
     ],
     {
       ordered: false,
-    }
+    },
   );
   return {
     chat_id: newChat.insertedId,
@@ -320,15 +292,11 @@ async function addMessage(chat_id: string, messageObject: MessageObject) {
     {
       $push: { messages: { ...messageObject, id } },
       $set: { last_updated: messageObject.timestamp },
-    }
+    },
   );
   return id.toString();
 }
-async function updateSeenMessages(
-  chat_id: string,
-  seenById: string,
-  messageId: string
-) {
+async function updateSeenMessages(chat_id: string, seenById: string, messageId: string) {
   return await chatsCollection.updateOne(
     {
       _id: new ObjectId(chat_id),
@@ -338,14 +306,10 @@ async function updateSeenMessages(
       $addToSet: {
         "messages.$.seenByRecipients": new ObjectId(seenById),
       },
-    }
+    },
   );
 }
-async function updateUnseenMsgCount(
-  senderId: string,
-  receiverId: string,
-  INCREASE = true
-) {
+async function updateUnseenMsgCount(senderId: string, receiverId: string, INCREASE = true) {
   const update = {
     [INCREASE ? "$inc" : "$set"]: {
       [`connections.${senderId}.unseen_messages_count`]: INCREASE ? 1 : 0,
@@ -355,7 +319,7 @@ async function updateUnseenMsgCount(
     {
       _id: new ObjectId(receiverId),
     },
-    update
+    update,
   );
 }
 
@@ -369,7 +333,7 @@ async function clearChat(chat_id: string, from: string, to: string) {
         $set: {
           messages: [],
         },
-      }
+      },
     ),
     usersCollection.updateOne(
       {
@@ -379,20 +343,15 @@ async function clearChat(chat_id: string, from: string, to: string) {
         $set: {
           [`connections.${from}.unseen_messages_count`]: 0,
         },
-      }
+      },
     ),
   ]);
 }
 
-async function deleteChat(
-  chatId: string,
-  fromId: string,
-  connectionId: string,
-  toBlock = false
-) {
+async function deleteChat(chatId: string, fromId: string, connectionId: string, toBlock = false) {
   const updateQuerySender: {
-    $unset: Object;
-    $push?: Object;
+    $unset: object;
+    $push?: object;
   } = {
     $unset: {
       [`connections.${connectionId}`]: "",
@@ -436,13 +395,7 @@ async function deleteChat(
   return;
 }
 
-async function updateStatus(
-  userId: string,
-  {
-    code,
-    update_type,
-  }: { code: keyof typeof USER_STATUS; update_type: "auto" | "manual" }
-) {
+async function updateStatus(userId: string, { code, update_type }: { code: keyof typeof USER_STATUS; update_type: "auto" | "manual" }) {
   const update: UpdateFilter<Document> | Partial<Document> = {
     $set: {
       status: {
@@ -456,7 +409,7 @@ async function updateStatus(
     {
       _id: new ObjectId(userId),
     },
-    update
+    update,
   );
 }
 
@@ -469,7 +422,7 @@ async function acceptMessageRequest(chatId: string, accepterId: string) {
       $push: {
         participants: new ObjectId(accepterId),
       },
-    }
+    },
   );
 }
 
@@ -480,26 +433,21 @@ async function isUserRestricted(restrictId: string, userId: string) {
         _id: new ObjectId(userId),
         blocked_users: { $in: [new ObjectId(restrictId)] },
       },
-      { projection: { _id: 1 } }
+      { projection: { _id: 1 } },
     ),
     usersCollection.findOne(
       {
         _id: new ObjectId(restrictId),
         blocked_users: { $in: [new ObjectId(userId)] },
       },
-      { projection: { _id: 1 } }
+      { projection: { _id: 1 } },
     ),
   ]);
 
   return result && (result[0]?._id || result[1]?._id) ? true : false;
 }
 
-async function deleteMessage(
-  chatId: string,
-  messageId: string,
-  fromId: string,
-  forAll = false
-) {
+async function deleteMessage(chatId: string, messageId: string, fromId: string, forAll = false) {
   const params = forAll
     ? [
         {
@@ -525,12 +473,7 @@ async function deleteMessage(
   return chatsCollection.updateOne(params[0], params[1]);
 }
 
-async function updateMessage(
-  chatId: string,
-  messageId: string,
-  update: MessageUpdate,
-  fromId: string
-) {
+async function updateMessage(chatId: string, messageId: string, update: MessageUpdate, fromId: string) {
   return chatsCollection.updateOne(
     {
       _id: new ObjectId(chatId),
@@ -548,15 +491,12 @@ async function updateMessage(
           "message.sender_id": fromId,
         },
       ],
-    }
+    },
   );
 }
 
 async function getBlockedUsers(userId: string) {
-  const data = await usersCollection.findOne(
-    { _id: new ObjectId(userId) },
-    { projection: { _id: 0, blocked_users: 1 } }
-  );
+  const data = await usersCollection.findOne({ _id: new ObjectId(userId) }, { projection: { _id: 0, blocked_users: 1 } });
   if (data && data.blocked_users?.length > 0) {
     return await usersCollection
       .find(
@@ -565,7 +505,7 @@ async function getBlockedUsers(userId: string) {
             $in: data.blocked_users,
           },
         },
-        { projection: ProfileDataProjection }
+        { projection: ProfileDataProjection },
       )
       .toArray();
   }
@@ -581,7 +521,7 @@ async function blockUser(userId: string, blockId: string) {
       $addToSet: {
         blocked_users: new ObjectId(blockId),
       },
-    }
+    },
   );
 }
 
@@ -594,7 +534,7 @@ async function unblockUser(userId: string, blockedId: string) {
       $pull: {
         blocked_users: new ObjectId(blockedId),
       },
-    }
+    },
   );
 }
 
@@ -603,7 +543,7 @@ async function provideSignedURL(
   filesInfo: {
     name: string;
     size: number;
-  }[]
+  }[],
 ) {
   const filesWithSignedURL: {
     signed_url: string;

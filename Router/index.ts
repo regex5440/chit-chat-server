@@ -8,11 +8,7 @@ import {
   blockHandler,
   unblockHandler,
 } from "../API/Authenticated/endpoint_handler";
-import {
-  emailValidation,
-  loginAuthentication,
-  oAuthHandler,
-} from "../API/endpoint_handler";
+import { emailValidation, loginAuthentication, oAuthHandler } from "../API/endpoint_handler";
 import { removeRData } from "../Redis_Helper";
 
 import express from "express";

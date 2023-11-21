@@ -13,9 +13,8 @@ const tokenAuthority: MiddleWare = async (req, res, next) => {
         }
       } catch (e) {
         res.send(500);
-      } finally {
-        return;
       }
+      return;
     }
 
     validateToken(authToken, "login")
@@ -24,7 +23,7 @@ const tokenAuthority: MiddleWare = async (req, res, next) => {
         next();
       })
       .catch((r) => {
-        res.sendStatus(401);
+        res.status(401).send(r);
       });
   } else {
     res.sendStatus(401);

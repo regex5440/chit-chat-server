@@ -46,11 +46,7 @@ const sendOTPMail = async (email: string, otp: number) => {
     `,
   });
 };
-const provideOTPAuth = async (
-  emailAddress: string,
-  resend: boolean | null,
-  ip_address: string
-) => {
+const provideOTPAuth = async (emailAddress: string, resend: boolean | null, ip_address: string) => {
   OTPAuthCleaner();
   if (OTPAuth[ip_address]?.code_list.size >= 5) {
     return {
@@ -78,15 +74,8 @@ const provideOTPAuth = async (
   }
   return { created: false, message: "Something is wrong on our side!" };
 };
-const verifyOTPAuth = (
-  emailAddress: string,
-  otp: number,
-  ip_address: string
-) => {
-  if (
-    OTPAuth[ip_address]?.forEmail === emailAddress &&
-    OTPAuth[ip_address]?.code_list.has(otp)
-  ) {
+const verifyOTPAuth = (emailAddress: string, otp: number, ip_address: string) => {
+  if (OTPAuth[ip_address]?.forEmail === emailAddress && OTPAuth[ip_address]?.code_list.has(otp)) {
     delete OTPAuth[ip_address];
     return { valid: true };
   }
@@ -94,7 +83,7 @@ const verifyOTPAuth = (
 };
 
 function OTPAuthCleaner() {
-  for (let key in OTPAuth) {
+  for (const key in OTPAuth) {
     if (OTPAuth[key].lastRequest.getTime() <= new Date().getTime() - 86400000) {
       delete OTPAuth[key];
     }

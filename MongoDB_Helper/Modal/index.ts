@@ -1,4 +1,4 @@
-//@ts-nocheck
+// @ts-nocheck
 import { Schema, model } from "mongoose";
 
 const Profile = model(
@@ -18,7 +18,7 @@ const Profile = model(
     profile_type: String,
     username: String,
     status: "ONLINE" | "OFFLINE",
-  })
+  }),
 );
 
 const Chat = model(
@@ -30,7 +30,7 @@ const Chat = model(
     created_by: String,
     messages: Array,
     participants: Array,
-  })
+  }),
 );
 
 export { Profile, Chat };

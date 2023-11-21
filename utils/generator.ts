@@ -18,4 +18,4 @@ export const SuccessResponse = ({ message = "", data }: ResponseProp) => {
     data: data,
     message: message,
   };
-}
+};

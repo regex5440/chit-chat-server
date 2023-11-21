@@ -2,3 +2,7 @@
 README.md
 package*.json
 tsconfig.json
+.*ignore
+.husky
+node_modules
+build

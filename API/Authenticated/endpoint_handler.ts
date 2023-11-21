@@ -15,8 +15,7 @@ import { RequestHandler } from "../../@types";
 
 const userProfileData: RequestHandler = async (req, res) => {
   try {
-    if (!req.userId)
-      return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
+    if (!req.userId) return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
     const profileData = await getProfileById(req.userId, true);
     res.send(SuccessResponse({ data: profileData }));
   } catch (e) {
@@ -33,13 +32,11 @@ const userNameChecker: RequestHandler = (req, res) => {
         res.send(
           SuccessResponse({
             data: { available: availability },
-          })
+          }),
         );
       });
     } else {
-      res
-        .status(400)
-        .send(ErrorResponse({ message: "Invalid username check request" }));
+      res.status(400).send(ErrorResponse({ message: "Invalid username check request" }));
     }
   } catch (e) {
     console.log("FailedUsernameCheck:", e);
@@ -106,7 +103,7 @@ const userSearchHandler: RequestHandler = async (req, res) => {
     res.send(
       SuccessResponse({
         data: { users, hasData: users.length > 0, groups: [] },
-      })
+      }),
     );
   } catch (e) {
     console.log(e);
@@ -115,8 +112,7 @@ const userSearchHandler: RequestHandler = async (req, res) => {
 };
 
 const imageHandler: RequestHandler = async (req, res) => {
-  if (!req.userId)
-    return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
+  if (!req.userId) return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
   const imageBlob = req.body;
   if (!imageBlob) {
     res.status(400).send(ErrorResponse({ message: "Image not provided!" }));
@@ -132,8 +128,7 @@ const registerUser: RequestHandler = async (req, res) => {
   try {
     console.log(Object.keys(req.body).length);
     if (Object.keys(req.body).length === 6) {
-      const { about, usernameSelected, firstName, lastName, email, password } =
-        req.body;
+      const { about, usernameSelected, firstName, lastName, email, password } = req.body;
       const usernameAvailable = await isUsernameAvailable(usernameSelected);
       if (usernameAvailable && email === req.emailAddress) {
         const user = await createNewAccount({
@@ -156,13 +151,4 @@ const registerUser: RequestHandler = async (req, res) => {
   }
 };
 
-export {
-  userProfileData,
-  userNameChecker,
-  imageHandler,
-  registerUser,
-  userSearchHandler,
-  blockedUsersRequestHandler,
-  blockHandler,
-  unblockHandler,
-};
+export { userProfileData, userNameChecker, imageHandler, registerUser, userSearchHandler, blockedUsersRequestHandler, blockHandler, unblockHandler };

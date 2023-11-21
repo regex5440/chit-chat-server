@@ -10,18 +10,11 @@ import { RequestHandler } from "../@types";
 const loginAuthentication: RequestHandler = async (req, res) => {
   const { username, password } = req.body;
   if (username && password) {
-    const { userExists, credentialsMatch, userId } = await verifyUser(
-      username,
-      password
-    );
-    if (!userExists)
-      res.send(ErrorResponse({ message: "User does not exists!" }));
-    else if (!credentialsMatch)
-      res.send(
-        ErrorResponse({ message: "Username or Password is not correct!" })
-      );
+    const { userExists, credentialsMatch, userId } = await verifyUser(username, password);
+    if (!userExists) res.send(ErrorResponse({ message: "User does not exists!" }));
+    else if (!credentialsMatch) res.send(ErrorResponse({ message: "Username or Password is not correct!" }));
     else {
-      let token = await generateLoginToken(userId.toString());
+      const token = await generateLoginToken(userId.toString());
       if (token) {
         res.send(SuccessResponse({ data: token }));
       } else {
@@ -29,9 +22,7 @@ const loginAuthentication: RequestHandler = async (req, res) => {
       }
     }
   } else {
-    res
-      .status(400)
-      .json(ErrorResponse({ message: "Invalid credentials input" }));
+    res.status(400).json(ErrorResponse({ message: "Invalid credentials input" }));
   }
 };
 
@@ -46,9 +37,7 @@ const emailValidation: RequestHandler = async (req, res) => {
         res.send(ErrorResponse({ message: "Invalid Email" }));
         return;
       }
-      const emailAlreadyRegistered = await isEmailAlreadyRegistered(
-        emailAddress
-      );
+      const emailAlreadyRegistered = await isEmailAlreadyRegistered(emailAddress);
       if (!emailAlreadyRegistered) {
         const OTPCreated = await provideOTPAuth(emailAddress, resend, req.ip);
         if (OTPCreated.created || OTPCreated.exists) {
@@ -65,16 +54,14 @@ const emailValidation: RequestHandler = async (req, res) => {
         res.send(
           SuccessResponse({
             data: generateNewToken({ emailAddress }, "signup"),
-          })
+          }),
         );
       } else {
         res.send(ErrorResponse({ message: "Unverified" }));
       }
     }
   } catch (e) {
-    res
-      .status(500)
-      .send(ErrorResponse({ message: "Something went wrong to us!" }));
+    res.status(500).send(ErrorResponse({ message: "Something went wrong to us!" }));
     console.error("FailedEmailAuthentication:", e);
   }
 };
@@ -97,7 +84,7 @@ const oAuthHandler: RequestHandler = async (req, res) => {
           SuccessResponse({
             data: await generateLoginToken(registeredUser.toString()),
             message: "login",
-          })
+          }),
         );
       } else {
         res.send(
@@ -107,12 +94,10 @@ const oAuthHandler: RequestHandler = async (req, res) => {
               firstName: payload.given_name,
               lastName: payload.family_name,
               email: payload.email,
-              token: payload.email_verified
-                ? generateNewToken({ emailAddress: payload.email }, "signup")
-                : null,
+              token: payload.email_verified ? generateNewToken({ emailAddress: payload.email }, "signup") : null,
             },
             message: "signup",
-          })
+          }),
         );
       }
     } catch (e) {
