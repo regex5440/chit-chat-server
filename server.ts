@@ -247,6 +247,7 @@ io.on("connection", async (socket) => {
       fromId: string,
       forAll = false
     ) => {
+      //TODO: Remove attachments from bucket related to deleted message
       await deleteMessage(chat_id, messageId, fromId, forAll);
       if (forAll) {
         io.to(chat_id).emit(

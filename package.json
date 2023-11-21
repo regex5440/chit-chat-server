@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc",
-    "static": "npx tsc && node build/server.js",
+    "static": "node build/server.js",
     "start": "concurrently \"npx tsc -w\" \"nodemon -q build/server.js\"",
     "prepare": "husky install"
   },
