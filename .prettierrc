@@ -1,4 +1,4 @@
 {
   "singleAttributePerLine": true,
-  "functionParameter": "multiline"
+  "printWidth": 150
 }
