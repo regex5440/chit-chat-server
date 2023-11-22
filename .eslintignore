@@ -7,3 +7,4 @@ Dockerfile
 .*ignore
 *.yaml
 *.env
+README.md

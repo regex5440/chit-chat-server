@@ -18,6 +18,8 @@
 > Create a `.env` file in the root directory and set the following variables:
 
 ```
+App_Logo=<Link to the logo image>
+Client_URL=<Origin domain of frontend app>
 DB_UserName=<MONGODB_USERNAME>
 DB_PassWord=<MONGODB_PASSWORD>
 TOKEN_KEY=<YOUR KEY FOR JWT SIGNATURE>
@@ -26,20 +28,26 @@ EMAIL_SERVICE=<Email Service Name>
 EMAIL_USERNAME=<Email Username>
 EMAIL_PASSWORD=<Email Password>
 AWS_Endpoint=<AWS Endpoint URL (including account id)>
-AWS_Access_Key_ID=<TOKEN ACCESS ID>
+AWS_Access_KeyID=<TOKEN ACCESS ID>
 AWS_SecretAccess_Key=<TOKEN SECRET ACCESS KEY>
 S3_ProfileData_Bucket=<Bucket for profile pictures>
 S3_Assets_Bucket=<Bucket for attachments>
+OAuth_ID=<OAuth ID from OAuth Provider>
+OAuth_Key=<OAuth Key from OAuth Provider>
+Redis_Password=<Redis Cloud DB password for production>
 ```
 
 > Replace the `<---HINT---->` with your own values.
 
 ## Available Script
 
+### Development
 `npm start`
-
 > Start the server using nodemon and watch for changes
 
-`npm run static`
+### Production
+`npm run build`
+> Build to ./build directory
 
+`npm run static`
 > Start the server script without watching file changes.
