@@ -1,4 +1,6 @@
 import nodemailer from "nodemailer";
+import { config } from "dotenv";
+config();
 const OTPAuth: {
   [ip_address: string]: {
     code_list: Set<number>;
@@ -19,7 +21,7 @@ const mailTransporter = nodemailer.createTransport({
 });
 const sendOTPMail = async (email: string, otp: number) => {
   return mailTransporter.sendMail({
-    from: "Chit-Chat <harshdagar@hdxdev.in>",
+    from: `Chit-Chat <${process.env.EMAIL_USERNAME}>`,
     to: email,
     subject: "One-Time Password for Email Verification",
     html: `
@@ -32,7 +34,7 @@ const sendOTPMail = async (email: string, otp: number) => {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 </style>
-        <img alt="Chit Chat" style="display: block;margin: 0 auto;text-align: center;mix-blend-mode:color-burn; max-width: 100%;" src="https://cc.static.hdxdev.in/logos/chit-chat-logo.jpg"/>
+        <img alt="Chit Chat" style="display: block;margin: 0 auto;text-align: center;mix-blend-mode:color-burn; max-width: 100%;" src=${process.env.App_Logo}/>
         <h2 style="color: #00287f;margin-bottom: 20px;text-decoration: underline;text-underline-position: under;">Email Authentication</h2>
         <p style="color: #555; line-height: 1.6;">Hi there!</p>
         <p style="color: #555; line-height: 1.6;">Your One-Time Password (OTP) for email verification is: <code style="color: #00287f;text-align: center;display: block;font-size: 32px;margin-top: 10px;letter-spacing: 25px;">${otp}</code></p>
