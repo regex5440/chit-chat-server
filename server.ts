@@ -34,9 +34,9 @@ import { getRData } from "./Redis_Helper/index.js";
 const expressApp = express();
 
 const server = createServer(expressApp);
-const corsPolicy = {
+const corsPolicy: cors.CorsOptions | cors.CorsOptionsDelegate | undefined = {
   origin: process.env.Client_URL,
-  credentials: false,
+  credentials: true,
 };
 const io = new Server(server, {
   cors: corsPolicy,

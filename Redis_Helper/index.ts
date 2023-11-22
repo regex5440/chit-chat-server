@@ -1,6 +1,18 @@
 import * as redis from "redis";
+import { config } from "dotenv";
+config();
 
-const rClient = redis.createClient();
+const rClient = redis.createClient(
+  process.env.NODE_ENV === "production"
+    ? {
+        password: process.env.Redis_Password,
+        socket: {
+          host: "redis-11729.c302.asia-northeast1-1.gce.cloud.redislabs.com",
+          port: 11729,
+        },
+      }
+    : {},
+);
 
 rClient.connect();
 

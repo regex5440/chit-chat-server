@@ -6,3 +6,5 @@ tsconfig.json
 .husky
 node_modules
 build
+Dockerfile
+*.env

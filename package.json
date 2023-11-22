@@ -9,7 +9,7 @@
     "build": "npx tsc",
     "static": "node build/server.js",
     "start": "concurrently \"npx tsc -w\" \"nodemon -q build/server.js\"",
-    "prepare": "husky install",
+    "prepare": "npx husky install",
     "lint": "eslint . && prettier --check .",
     "format": "eslint . --fix"
   },
