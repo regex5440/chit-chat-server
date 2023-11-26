@@ -11,7 +11,9 @@
     "start": "concurrently \"npx tsc -w\" \"nodemon -q build/server.js\"",
     "prepare": "npx husky install",
     "lint": "eslint . && prettier --check .",
-    "format": "eslint . --fix"
+    "format": "eslint . --fix",
+    "buildImage": "docker build -t harshdagar/chit-chat-server .",
+    "runImage": "docker compose up -d"
   },
   "husky": {
     "hooks": {
