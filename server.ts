@@ -30,6 +30,8 @@ import { validateToken } from "./utils/jwt.js";
 // import mongoose from "mongoose";
 import { MessageUpdate } from "./@types/index.js";
 import { getRData } from "./Redis_Helper/index.js";
+import { availableParallelism, platform } from "os";
+import cluster from "cluster";
 
 const expressApp = express();
 
@@ -254,12 +256,31 @@ expressApp.get("/assets/:assetId", async (req, res) => {
 
 try {
   if (!(process.env.DB_UserName || process.env.DB_PassWord)) throw new Error("DB_UserName or DB_PassWord is not defined");
-
-  mongoDbClient.connect().then(() => {
-    server.listen(5000, function () {
-      console.log("Started at port 5000");
+  if (cluster.isPrimary) {
+    const availableCores = availableParallelism();
+    console.log("Platform: %s", platform());
+    console.log("Starting primary process...");
+    console.log("%d available cores", availableCores);
+    if (availableCores > 1) {
+      console.log("Creating clusters");
+      for (let i = 0; i < availableCores; i++) {
+        cluster.fork();
+      }
+    }
+    cluster.on("online", (worker) => {
+      console.log(`Online: ${worker.process.pid}`);
     });
-  });
+    cluster.on("exit", (worker, code, signal) => {
+      console.log(`Worker ${worker.process.pid} died.`);
+      console.log(`Current Online: ${Object.keys(cluster.workers as object).length}`);
+    });
+  } else {
+    mongoDbClient.connect().then(() => {
+      server.listen(5000, function () {
+        console.log("Started at port 5000");
+      });
+    });
+  }
 } catch (e) {
-  console.error("MongoConnectError:", e);
+  console.error("ServerError:", e);
 }
