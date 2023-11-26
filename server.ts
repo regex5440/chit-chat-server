@@ -32,6 +32,8 @@ import { MessageUpdate } from "./@types/index.js";
 import { getRData } from "./Redis_Helper/index.js";
 import { availableParallelism, platform } from "os";
 import cluster from "cluster";
+import { setupMaster, setupWorker } from "@socket.io/sticky";
+import { setupPrimary, createAdapter } from "@socket.io/cluster-adapter";
 
 const expressApp = express();
 
@@ -261,6 +263,11 @@ try {
     console.log("Platform: %s", platform());
     console.log("Starting primary process...");
     console.log("%d available cores", availableCores);
+    setupMaster(server, {
+      loadBalancingMethod: "least-connection",
+    });
+    setupPrimary();
+    cluster.setupPrimary({ serialization: "advanced" });
     if (availableCores > 1) {
       console.log("Creating clusters");
       for (let i = 0; i < availableCores; i++) {
@@ -275,6 +282,8 @@ try {
       console.log(`Current Online: ${Object.keys(cluster.workers as object).length}`);
     });
   } else {
+    io.adapter(createAdapter());
+    setupWorker(io);
     mongoDbClient.connect().then(() => {
       server.listen(5000, function () {
         console.log("Started at port 5000");
