@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { config } from "dotenv";
 config();
@@ -47,4 +47,32 @@ const getPostSignedURL = async (path: string, key: string, size: number) => {
   );
 };
 
-export { uploadProfileImage, getPostSignedURL };
+const removeDirectory = async (dir: string) => {
+  const Bucket = process.env.S3_Assets_Bucket;
+  if (!Bucket) return;
+  const listedObjects = await s3Client.send(new ListObjectsV2Command({ Bucket }));
+
+  if (!listedObjects.Contents || listedObjects.Contents.length === 0) return;
+  const x = await Promise.all(
+    listedObjects.Contents.map((object) =>
+      s3Client.send(
+        new DeleteObjectCommand({
+          Bucket,
+          Key: `${dir}/${object.Key}`,
+        }),
+      ),
+    ),
+  );
+  if (listedObjects.IsTruncated) {
+    await removeDirectory(dir);
+  }
+  return x;
+};
+
+const removeAsset = async (keys: string[]) => {
+  const Bucket = process.env.S3_Assets_Bucket;
+  if (!Bucket) return;
+  return Promise.all(keys.map((k) => s3Client.send(new DeleteObjectCommand({ Bucket, Key: k }))));
+};
+
+export { uploadProfileImage, getPostSignedURL, removeDirectory, removeAsset };

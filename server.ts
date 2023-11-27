@@ -2,39 +2,39 @@ import express from "express";
 import cors from "cors";
 import { Server } from "socket.io";
 import { createServer } from "http";
-import { SOCKET_HANDLERS, USER_STATUS } from "./utils/enums.js";
 import {
-  mongoDbClient,
-  addConnection,
-  getChat,
-  getProfileById,
-  getConnectionData,
-  connectionsData,
-  addMessage,
-  updateUnseenMsgCount,
-  clearChat,
-  deleteChat,
-  updateStatus,
   acceptMessageRequest,
-  isUserRestricted,
-  updateSeenMessages,
+  addConnection,
+  addMessage,
+  clearChat,
+  connectionsData,
+  deleteChat,
   deleteMessage,
-  updateMessage,
+  getChat,
+  getConnectionData,
+  getProfileById,
+  isUserRestricted,
+  mongoDbClient,
   provideSignedURL,
+  updateMessage,
+  updateSeenMessages,
+  updateStatus,
+  updateUnseenMsgCount,
 } from "./MongoDB_Helper/index.js";
 import { signupTokenAuthority, tokenAuthority } from "./API/middleware.js";
 import route from "./Router";
 import { existsSync } from "fs";
 import path from "path";
-import { validateToken } from "./utils/jwt.js";
 // import mongoose from "mongoose";
-import { MessageUpdate } from "./@types/index.js";
-import { getRData } from "./Redis_Helper/index.js";
 import { availableParallelism, platform } from "os";
 import cluster from "cluster";
 import { setupMaster, setupWorker } from "@socket.io/sticky";
 import { setupPrimary, createAdapter } from "@socket.io/cluster-adapter";
 import process from "process";
+import { validateToken } from "./utils/jwt.js";
+import { SOCKET_HANDLERS, USER_STATUS } from "./utils/enums.js";
+import { MessageUpdate } from "./@types/index.js";
+import { getRData } from "./Redis_Helper/index.js";
 
 try {
   if (!(process.env.DB_UserName || process.env.DB_PassWord)) throw new Error("DB_UserName or DB_PassWord is not defined");
@@ -85,7 +85,9 @@ try {
     setupWorker(io);
     // Socket
     io.on("connection", async (socket) => {
-      // console.log("Socket CONNECTED", socket.rooms);
+      // socket.onAny((event, ...rest) => {
+      //   console.log("Socket Rooms:", socket.rooms, "\nevent:", event, "\nrest:", rest);
+      // });
       //TODO: Optimize Authorization if possible
       const authToken = socket.handshake.headers.authorization?.split(" ")[1] || "";
       let loggedInUserId = "";
@@ -213,20 +215,26 @@ try {
           const messageTempId = messageObject.tempId;
           delete messageObject.tempId;
           const data = await Promise.all([addMessage(chat_id, messageObject), updateUnseenMsgCount(messageObject.sender_id, receiverId)]);
-          io.in(chat_id).emit(SOCKET_HANDLERS.CHAT.NewMessage, chat_id, currentTime, { ...messageObject, id: data[0], tempId: messageTempId });
+          io.to(chat_id).emit(SOCKET_HANDLERS.CHAT.NewMessage, chat_id, currentTime, { ...messageObject, id: data[0], tempId: messageTempId });
         } catch (e) {
           console.log("MessageTransferFailed:", e);
           socket.emit(SOCKET_HANDLERS.CHAT.NewMessage_Failed, chat_id);
         }
       });
 
-      socket.on(SOCKET_HANDLERS.CHAT.MESSAGE.Delete, async (chat_id: string, messageId: string, fromId: string, forAll = false) => {
-        //TODO: Remove attachments from bucket related to deleted message
-        await deleteMessage(chat_id, messageId, fromId, forAll);
-        if (forAll) {
-          io.to(chat_id).emit(SOCKET_HANDLERS.CHAT.MESSAGE.Delete, chat_id, messageId);
-        }
-      });
+      socket.on(
+        SOCKET_HANDLERS.CHAT.MESSAGE.Delete,
+        async (
+          { chatId, messageId, fromId, attachments }: { chatId: string; messageId: string; fromId: string; attachments: string[] },
+          forAll = false,
+        ) => {
+          await deleteMessage(chatId, messageId, fromId, forAll, attachments); //assetKey for attachment message
+          if (forAll) {
+            io.to(chatId).emit(SOCKET_HANDLERS.CHAT.MESSAGE.Delete, chatId, messageId);
+            console.log("SocketMsgSend", { chatId, messageId });
+          }
+        },
+      );
 
       socket.on(SOCKET_HANDLERS.CHAT.MESSAGE.Edit, async (chat_id: string, messageId: string, update: MessageUpdate, fromId: string) => {
         await updateMessage(chat_id, messageId, update, fromId);
@@ -238,7 +246,7 @@ try {
           updateSeenMessages(chat_id, seenByUserId, messageId),
           updateUnseenMsgCount(toReceiverId, seenByUserId, false),
         ]);
-        io.to(chat_id).emit(SOCKET_HANDLERS.CHAT.SeenUpdate, chat_id, seenByUserId, messageId);
+        socket.to(chat_id).emit(SOCKET_HANDLERS.CHAT.SeenUpdate, chat_id, seenByUserId, messageId);
       });
 
       socket.on(SOCKET_HANDLERS.CHAT.ClearAll, async ({ chatId, fromId, toId }) => {

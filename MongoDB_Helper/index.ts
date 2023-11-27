@@ -4,7 +4,7 @@ import { MongoClient, ObjectId, UpdateFilter } from "mongodb";
 import { ProfileDataProjection, UserProfileProjection, ProfileSearchResults } from "./projections";
 import { USER_STATUS } from "../utils/enums";
 import { MessageObject, MessageUpdate } from "../@types";
-import { getPostSignedURL } from "../CloudFlare_Helper";
+import { getPostSignedURL, removeAsset, removeDirectory } from "../CloudFlare_Helper";
 
 const mongoDbClient = new MongoClient(
   `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
@@ -324,6 +324,7 @@ async function updateUnseenMsgCount(senderId: string, receiverId: string, INCREA
 }
 
 async function clearChat(chat_id: string, from: string, to: string) {
+  removeDirectory(`chat_${chat_id}`);
   return await Promise.all([
     chatsCollection.updateOne(
       {
@@ -349,6 +350,7 @@ async function clearChat(chat_id: string, from: string, to: string) {
 }
 
 async function deleteChat(chatId: string, fromId: string, connectionId: string, toBlock = false) {
+  removeDirectory(`chat_${chatId}`);
   const updateQuerySender: {
     $unset: object;
     $push?: object;
@@ -447,29 +449,33 @@ async function isUserRestricted(restrictId: string, userId: string) {
   return result && (result[0]?._id || result[1]?._id) ? true : false;
 }
 
-async function deleteMessage(chatId: string, messageId: string, fromId: string, forAll = false) {
-  const params = forAll
-    ? [
-        {
-          _id: new ObjectId(chatId),
+async function deleteMessage(chatId: string, messageId: string, fromId: string, forAll = false, attachments: string[]) {
+  let params: any = [
+    {
+      _id: new ObjectId(chatId),
+      "messages.id": new ObjectId(messageId),
+    },
+    {
+      $addToSet: {
+        "messages.$.deletedFor": new ObjectId(fromId),
+      },
+    },
+  ];
+  if (forAll) {
+    params = [
+      {
+        _id: new ObjectId(chatId),
+      },
+      {
+        $pull: {
+          messages: { id: new ObjectId(messageId), sender_id: fromId },
         },
-        {
-          $pull: {
-            messages: { id: new ObjectId(messageId), sender_id: fromId },
-          },
-        },
-      ]
-    : [
-        {
-          _id: new ObjectId(chatId),
-          "messages.id": new ObjectId(messageId),
-        },
-        {
-          $addToSet: {
-            "messages.$.deletedFor": new ObjectId(fromId),
-          },
-        },
-      ];
+      },
+    ];
+    if (attachments) {
+      await removeAsset(attachments);
+    }
+  }
   return chatsCollection.updateOne(params[0], params[1]);
 }
 
