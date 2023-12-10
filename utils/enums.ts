@@ -29,6 +29,12 @@ const SOCKET_HANDLERS = {
     StatusUpdate: "lastSeenUpdate",
     PictureUpdate: "profilePicUpdate",
   },
+  RTC_SIGNALING: {
+    Offer: "receivedOffer",
+    Answer: "respondedAnswer",
+    Candidate: "iceCandidate",
+    End: "endRTCConnection",
+  },
 };
 
 const REGEXP = {

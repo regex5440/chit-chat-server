@@ -20,8 +20,8 @@ import {
   updateSeenMessages,
   updateStatus,
   updateUnseenMsgCount,
-} from "./MongoDB_Helper/index.js";
-import { signupTokenAuthority, tokenAuthority } from "./API/middleware.js";
+} from "./MongoDB_Helper";
+import { signupTokenAuthority, tokenAuthority } from "./API/middleware";
 import route from "./Router";
 import { existsSync } from "fs";
 import path from "path";
@@ -31,10 +31,15 @@ import cluster from "cluster";
 import { setupMaster, setupWorker } from "@socket.io/sticky";
 import { setupPrimary, createAdapter } from "@socket.io/cluster-adapter";
 import process from "process";
-import { validateToken } from "./utils/jwt.js";
-import { SOCKET_HANDLERS, USER_STATUS } from "./utils/enums.js";
-import { MessageUpdate } from "./@types/index.js";
-import { getRData } from "./Redis_Helper/index.js";
+import { validateToken } from "./utils/jwt";
+import { SOCKET_HANDLERS, USER_STATUS } from "./utils/enums";
+import { MessageUpdate } from "./@types/index";
+import { getRData } from "./Redis_Helper/index";
+
+const corsPolicy: cors.CorsOptions | cors.CorsOptionsDelegate | undefined = {
+  origin: process.env.Client_URL?.includes(",") ? process.env.Client_URL.split(",") : process.env.Client_URL,
+  credentials: true,
+};
 
 try {
   if (!(process.env.DB_UserName || process.env.DB_PassWord)) throw new Error("DB_UserName or DB_PassWord is not defined");
@@ -74,10 +79,6 @@ try {
     const expressApp = express();
 
     const server = createServer(expressApp);
-    const corsPolicy: cors.CorsOptions | cors.CorsOptionsDelegate | undefined = {
-      origin: process.env.Client_URL,
-      credentials: true,
-    };
     const io = new Server(server, {
       cors: corsPolicy,
     });
@@ -259,6 +260,22 @@ try {
         socket.to(chatId).emit(SOCKET_HANDLERS.CONNECTION.RemoveConnection, fromUserId, chatId);
         socket.leave(chatId);
       });
+
+      // RTC Signaling Handlers
+
+      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.Offer, (chatId: string, ...args) => {
+        socket.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.Offer, chatId, ...args);
+      });
+      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.Answer, (chatId: string, msg: object) => {
+        socket.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.Answer, msg);
+      });
+      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.Candidate, (chatId: string, msg: object) => {
+        socket.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.Candidate, msg);
+      });
+      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.End, (chatId) => {
+        socket.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.End);
+      });
+
       socket.on("disconnect", async (reason) => {
         const rData = await getRData(socket.handshake.headers.authorization?.split(" ")[1] || "");
         if (rData) {
