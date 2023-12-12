@@ -49,6 +49,7 @@ try {
     console.log("Platform: %s", platform());
     console.log("Primary process...");
     console.log("Starting %d workers out of %d available cores", availableCores, allCores);
+    const PORT = process.env.PORT || 5000;
     const httpServer = createServer();
     setupMaster(httpServer, {
       loadBalancingMethod: "least-connection",
@@ -66,8 +67,8 @@ try {
       console.log(`Online: ${worker.process.pid}`);
       currentOnline++;
       if (currentOnline === availableCores) {
-        httpServer.listen(5000, () => {
-          console.log("Server started at", 5000);
+        httpServer.listen(PORT, () => {
+          console.log("Server started at", PORT);
         });
       }
     });
