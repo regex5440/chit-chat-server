@@ -42,4 +42,8 @@ route.get("/api/log_out", async (req, res) => {
   res.status(401).send();
 });
 
+route.get("/", (req, res) => {
+  res.redirect(301, "https://cc.hdxdev.in");
+});
+
 export default route;
