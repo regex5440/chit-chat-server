@@ -30,10 +30,14 @@ const SOCKET_HANDLERS = {
     PictureUpdate: "profilePicUpdate",
   },
   RTC_SIGNALING: {
-    Offer: "receivedOffer",
-    Answer: "respondedAnswer",
+    Offer: "Offer",
+    Answer: "Answer",
     Candidate: "iceCandidate",
     End: "endRTCConnection",
+    Reconnect: "reconnectionRequest",
+    Reconnect_RESP: "reconnectionResponse",
+    CallInitiator: "callInitiator",
+    CallInitiator_RESP: "responseToCallInitiator",
   },
 };
 
