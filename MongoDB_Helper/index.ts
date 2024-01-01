@@ -187,7 +187,6 @@ async function createNewAccount({
   email,
   password,
   username,
-  profile_picture_url,
 }: {
   about: string;
   firstName: string;
@@ -195,7 +194,6 @@ async function createNewAccount({
   email: string;
   password: string;
   username: string;
-  profile_picture_url: string;
 }) {
   const newUser = await usersCollection.insertOne({
     profile_type: "person",
@@ -208,7 +206,7 @@ async function createNewAccount({
     },
     avatar: {
       url: "",
-      key: profile_picture_url,
+      key: "",
     },
     last_active: "",
     connections: {},
@@ -561,7 +559,7 @@ async function provideSignedURL(
     const fileExtension = file.name.match(/\.[0-9a-z]+$/i)?.[0] || "";
     const path = `chat_${chat_id}`;
     const key = `cc_${fileID}${fileExtension}`;
-    const url = await getPostSignedURL(path, key, file.size);
+    const url = await getPostSignedURL(`${path}/${key}`, "attachment", 10);
     filesWithSignedURL.push({
       signed_url: url,
       key: `${path}/${key}`,

@@ -9,7 +9,7 @@ import {
   getBlockedUsers,
 } from "../../MongoDB_Helper";
 import { generateLoginToken } from "../../utils/jwt";
-import { uploadProfileImage } from "../../CloudFlare_Helper";
+import { getPostSignedURL, uploadProfileImage } from "../../CloudFlare_Helper";
 import { ErrorResponse, SuccessResponse } from "../../utils/generator";
 import { RequestHandler } from "../../@types";
 
@@ -111,24 +111,11 @@ const userSearchHandler: RequestHandler = async (req, res) => {
   }
 };
 
-const imageHandler: RequestHandler = async (req, res) => {
-  if (!req.userId) return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
-  const imageBlob = req.body;
-  if (!imageBlob) {
-    res.status(400).send(ErrorResponse({ message: "Image not provided!" }));
-  }
-  const key = await uploadProfileImage(req.userId, imageBlob);
-  if (key) {
-    await setProfilePictureUrl(req.userId, key);
-  }
-  res.send(SuccessResponse({ message: "ok" }));
-};
-
 const registerUser: RequestHandler = async (req, res) => {
   try {
     console.log(Object.keys(req.body).length);
-    if (Object.keys(req.body).length === 6) {
-      const { about, usernameSelected, firstName, lastName, email, password } = req.body;
+    if (Object.keys(req.body).length === 7) {
+      const { about, usernameSelected, firstName, lastName, email, password, hasImage } = req.body;
       const usernameAvailable = await isUsernameAvailable(usernameSelected);
       if (usernameAvailable && email === req.emailAddress) {
         const user = await createNewAccount({
@@ -138,10 +125,16 @@ const registerUser: RequestHandler = async (req, res) => {
           email: email.trim(),
           password: password.trim(),
           username: usernameSelected.trim(),
-          profile_picture_url: "", // To be updated with image url
         });
-        const token = await generateLoginToken(user.insertedId.toString());
-        res.send(SuccessResponse({ data: token }));
+        const generatedUserId = user.insertedId.toString();
+        const token = await generateLoginToken(generatedUserId);
+        if (hasImage) {
+          const signedURL = await getPostSignedURL(`${generatedUserId}.png`, "profileImage");
+          setProfilePictureUrl(generatedUserId, `${generatedUserId}.png`);
+          res.send(SuccessResponse({ data: { token, signedURL } }));
+        } else {
+          res.send(SuccessResponse({ data: token }));
+        }
       }
     }
     res.status(400).send(); // Bad requests for Invalid requests
@@ -151,4 +144,4 @@ const registerUser: RequestHandler = async (req, res) => {
   }
 };
 
-export { userProfileData, userNameChecker, imageHandler, registerUser, userSearchHandler, blockedUsersRequestHandler, blockHandler, unblockHandler };
+export { userProfileData, userNameChecker, registerUser, userSearchHandler, blockedUsersRequestHandler, blockHandler, unblockHandler };

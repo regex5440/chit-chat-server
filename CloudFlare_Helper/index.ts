@@ -27,9 +27,18 @@ const uploadProfileImage = async (user_Id: string, blob: Blob) => {
   );
   return Key;
 };
-
-const getPostSignedURL = async (path: string, key: string, size: number) => {
+/**
+ *
+ * @param key Name of the file to store on bucket, may include path
+ * @param mediaType Type of the file this file is going to be used @default attachment
+ * @param expiry Minutes to expire the link @default 5 mins
+ * @returns
+ */
+const getPostSignedURL = async (key: string, mediaType: "attachment" | "profileImage" = "attachment", expiry: number = 5) => {
   if (!process.env.S3_Assets_Bucket) {
+    throw new Error("S3_ProfileData_Bucket is not defined");
+  }
+  if (!process.env.S3_ProfileData_Bucket) {
     throw new Error("S3_ProfileData_Bucket is not defined");
   }
   //TODO: replace signedURL for post requests
@@ -38,8 +47,8 @@ const getPostSignedURL = async (path: string, key: string, size: number) => {
   return getSignedUrl(
     s3Client,
     new PutObjectCommand({
-      Bucket: process.env.S3_Assets_Bucket,
-      Key: `${path}/${key}`,
+      Bucket: mediaType === "attachment" ? process.env.S3_Assets_Bucket : process.env.S3_ProfileData_Bucket,
+      Key: key,
     }),
     {
       expiresIn: 600,

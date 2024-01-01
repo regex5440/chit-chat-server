@@ -1,7 +1,6 @@
 import {
   userProfileData,
   userNameChecker,
-  imageHandler,
   registerUser,
   userSearchHandler,
   blockedUsersRequestHandler,
@@ -28,7 +27,6 @@ route.post("/login", loginAuthentication);
 
 // Authenticated Login Endpoints
 route.get("/api/me", userProfileData);
-route.post("/api/imageUploader", imageHandler);
 route.get("/api/findUser", userSearchHandler);
 route.get("/api/blocked_users", blockedUsersRequestHandler);
 route.get("/api/block", blockHandler);
