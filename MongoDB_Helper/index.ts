@@ -145,6 +145,29 @@ async function getChat(chatIds: ObjectId[] = [], initialMessagesCount = 20) {
     .toArray();
 }
 
+async function getMessages(chatId: string, offset = 20, messagesCount = 50) {
+  const data = await chatsCollection.findOne(
+    { _id: new ObjectId(chatId) },
+    {
+      projection: {
+        _id: 0,
+        messages: { $slice: ["$messages", -1 * offset, messagesCount] },
+        totalCount: {
+          $size: "$messages",
+        },
+      },
+    },
+  );
+  if (!data) return;
+
+  if (data?.totalCount > offset) {
+    data.hasMore = true;
+  } else {
+    data.hasMore = false;
+  }
+  return data;
+}
+
 async function isUsernameAvailable(user_provided_username: string) {
   const user = await usersCollection.findOne({
     username: user_provided_username,
@@ -599,6 +622,7 @@ export {
   getBlockedUsers,
   blockUser,
   unblockUser,
+  getMessages,
 
   // Cloudflare
   provideSignedURL,

@@ -12,6 +12,7 @@ import {
   deleteMessage,
   getChat,
   getConnectionData,
+  getMessages,
   getProfileById,
   isUserRestricted,
   mongoDbClient,
@@ -208,7 +209,11 @@ try {
           // }
         }
       });
-
+      //TODO: Implement lazy load messages
+      socket.on(SOCKET_HANDLERS.CHAT.LoadMore, async (chatId, { size = 50, offset = 0 }) => {
+        const data = await getMessages(chatId, offset, size);
+        socket.emit(SOCKET_HANDLERS.CHAT.MoreMessages, chatId, data);
+      });
       socket.on(SOCKET_HANDLERS.CHAT.NewMessage, async ({ chat_id, receiverId, messageObject }) => {
         const currentTime = new Date();
         messageObject.timestamp = currentTime;

@@ -22,6 +22,8 @@ const SOCKET_HANDLERS = {
       Edit: "editMessage",
     },
     AttachmentURL: "getSignedURL",
+    LoadMore: "loadMoreMessages",
+    MoreMessages: "moreMessageFromServer",
   },
   CONNECTION: {
     ConnectionData: "connectionsWithChat",
