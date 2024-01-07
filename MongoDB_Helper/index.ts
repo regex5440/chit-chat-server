@@ -145,27 +145,49 @@ async function getChat(chatIds: ObjectId[] = [], initialMessagesCount = 20) {
     .toArray();
 }
 
-async function getMessages(chatId: string, offset = 20, messagesCount = 50) {
-  const data = await chatsCollection.findOne(
-    { _id: new ObjectId(chatId) },
-    {
-      projection: {
-        _id: 0,
-        messages: { $slice: ["$messages", -1 * offset, messagesCount] },
-        totalCount: {
-          $size: "$messages",
+/**
+ *
+ * @param chatId Chat Id in string
+ * @param count Number of messages user has
+ * @param messagesCount Number of messages user is requesting
+ */
+async function getMessages(chatId: string, count = 20, messagesCount = 50) {
+  const data = await chatsCollection
+    .aggregate([
+      {
+        $match: {
+          _id: new ObjectId(chatId),
         },
       },
-    },
-  );
-  if (!data) return;
+      {
+        $addFields: {
+          messageCount: { $size: "$messages" },
+        },
+      },
+      {
+        $addFields: {
+          offset: {
+            $subtract: ["$messageCount", count],
+          },
+          pageSize: {
+            $min: [{ $subtract: ["$messageCount", count] }, messagesCount],
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          messages: {
+            $slice: ["$messages", { $subtract: ["$offset", "$pageSize"] }, "$pageSize"],
+          },
+          hasMore: { $gt: ["$offset", "$pageSize"] },
+        },
+      },
+    ])
+    .toArray();
+  if (!data?.[0]) return {};
 
-  if (data?.totalCount > offset) {
-    data.hasMore = true;
-  } else {
-    data.hasMore = false;
-  }
-  return data;
+  return data[0];
 }
 
 async function isUsernameAvailable(user_provided_username: string) {

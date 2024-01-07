@@ -209,9 +209,8 @@ try {
           // }
         }
       });
-      //TODO: Implement lazy load messages
-      socket.on(SOCKET_HANDLERS.CHAT.LoadMore, async (chatId, { size = 50, offset = 0 }) => {
-        const data = await getMessages(chatId, offset, size);
+      socket.on(SOCKET_HANDLERS.CHAT.LoadMore, async (chatId, { size = 50, dataCount = 0 }) => {
+        const data = await getMessages(chatId, dataCount, size);
         socket.emit(SOCKET_HANDLERS.CHAT.MoreMessages, chatId, data);
       });
       socket.on(SOCKET_HANDLERS.CHAT.NewMessage, async ({ chat_id, receiverId, messageObject }) => {
