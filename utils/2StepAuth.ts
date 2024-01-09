@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer";
 import { config } from "dotenv";
+import sendEmail from "./mailer";
 config();
 const OTPAuth: {
   [ip_address: string]: {
@@ -10,20 +10,11 @@ const OTPAuth: {
 } = {};
 //TODO: Use redis to perform OTP Authentication rather than global variable
 
-const mailTransporter = nodemailer.createTransport({
-  host: "smtpout.secureserver.net",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USERNAME,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
 const sendOTPMail = async (email: string, otp: number) => {
-  return mailTransporter.sendMail({
-    from: `Chit-Chat <${process.env.EMAIL_USERNAME}>`,
+  return sendEmail({
     to: email,
     subject: "One-Time Password for Email Verification",
+
     html: `
     <div style="font-family: Arial, sans-serif;background-color: #f5f5f5;margin: 0;padding: 0;display: flex;justify-content: center;align-items: center;height: 600px;margin: auto;">
 

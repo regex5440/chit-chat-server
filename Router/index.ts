@@ -14,6 +14,10 @@ import express from "express";
 
 const route = express.Router();
 
+route.get("/dont_sleep", (req, res) => {
+  res.status(202).send("Ok, I won't");
+});
+
 route.post("/email_verifier", emailValidation);
 
 //After email verification, use this API
