@@ -1,4 +1,4 @@
-import { isEmailAlreadyRegistered, verifyUser } from "../MongoDB_Helper";
+import { isEmailAlreadyRegistered, oAuthGoogleLoginFinder, verifyUser } from "../MongoDB_Helper";
 import { provideOTPAuth, verifyOTPAuth } from "../utils/2StepAuth";
 import { REGEXP } from "../utils/enums";
 import { generateLoginToken, generateNewToken } from "../utils/jwt";
@@ -78,7 +78,7 @@ const oAuthHandler: RequestHandler = async (req, res) => {
       });
       const payload = ticket.getPayload();
       if (payload?.email === undefined) throw new Error("No data from Google");
-      const registeredUser = await isEmailAlreadyRegistered(payload.email);
+      const registeredUser = await oAuthGoogleLoginFinder(payload.email);
       if (registeredUser) {
         res.send(
           SuccessResponse({

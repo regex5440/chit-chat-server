@@ -7,11 +7,14 @@ import {
   blockUser,
   unblockUser,
   getBlockedUsers,
+  updateProfile,
+  updateOAuthProfile,
 } from "../../MongoDB_Helper";
 import { generateLoginToken } from "../../utils/jwt";
 import { getPostSignedURL, uploadProfileImage } from "../../CloudFlare_Helper";
 import { ErrorResponse, SuccessResponse } from "../../utils/generator";
 import { RequestHandler } from "../../@types";
+import { OAuth2Client } from "google-auth-library";
 
 const userProfileData: RequestHandler = async (req, res) => {
   try {
@@ -86,6 +89,47 @@ const unblockHandler: RequestHandler = async (req, res) => {
   }
 };
 
+const updateProfileHandler: RequestHandler = async (req, res) => {
+  try {
+    if (req.userId && req.body) {
+      const { about, firstName, lastName, username, email } = req.body;
+      if (firstName && username) {
+        await updateProfile(req.userId, { about, firstName, lastName, username, email });
+        res.send(SuccessResponse({ message: "ok" }));
+      } else {
+        res.status(400).send(ErrorResponse({ message: "First name and username are mandatory fields!" }));
+      }
+    }
+  } catch (e) {
+    console.log(e);
+    res.status(500).send(ErrorResponse({ message: "Something went wrong!" }));
+  }
+};
+
+const serviceConnectHandler: RequestHandler = async (req, res) => {
+  try {
+    if (req.userId && req.body) {
+      const { service, credential } = req.body;
+      if (service && credential) {
+        const client = new OAuth2Client();
+        const ticket = await client.verifyIdToken({
+          idToken: credential,
+          audience: process.env.OAuth_ID,
+        });
+        const payload = ticket.getPayload();
+        if (payload?.email === undefined) throw new Error("No data from Google");
+        await updateOAuthProfile(req.userId, payload.email, service);
+        res.send(SuccessResponse({ message: "added", data: { service, email: payload.email } }));
+      } else {
+        res.status(400).send(ErrorResponse({ message: "Invalid data provided" }));
+      }
+    }
+  } catch (e) {
+    console.log(e);
+    res.status(500).send(ErrorResponse({ message: "Something went wrong!" }));
+  }
+};
+
 const userSearchHandler: RequestHandler = async (req, res) => {
   try {
     if (req.query.q?.length === 0) {
@@ -144,4 +188,14 @@ const registerUser: RequestHandler = async (req, res) => {
   }
 };
 
-export { userProfileData, userNameChecker, registerUser, userSearchHandler, blockedUsersRequestHandler, blockHandler, unblockHandler };
+export {
+  userProfileData,
+  userNameChecker,
+  registerUser,
+  userSearchHandler,
+  blockedUsersRequestHandler,
+  blockHandler,
+  unblockHandler,
+  updateProfileHandler,
+  serviceConnectHandler,
+};

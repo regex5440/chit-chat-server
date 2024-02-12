@@ -202,6 +202,32 @@ async function isEmailAlreadyRegistered(email_address: string) {
   return user ? user._id : false;
 }
 
+async function oAuthGoogleLoginFinder(email: string) {
+  const user = await usersCollection.findOne({
+    "oauth.google.email": email,
+  });
+  return user ? user._id : false;
+}
+
+async function updateOAuthProfile(userId: string, oauthEmail: string, service: "google") {
+  const updateQuery = {
+    [service]: {
+      enabled: true,
+      email: oauthEmail,
+    },
+  };
+  return usersCollection.updateOne(
+    {
+      _id: new ObjectId(userId),
+    },
+    {
+      $set: {
+        oauth: updateQuery,
+      },
+    },
+  );
+}
+
 async function findUser(query: string) {
   const users = await usersCollection
     .aggregate([
@@ -363,6 +389,32 @@ async function updateUnseenMsgCount(senderId: string, receiverId: string, INCREA
       _id: new ObjectId(receiverId),
     },
     update,
+  );
+}
+
+async function updateProfile(
+  userId: string,
+  {
+    firstName,
+    lastName = "",
+    about = ".",
+    email = "",
+    username,
+  }: { firstName: string; lastName: string; about: string; email: string; username: string },
+) {
+  return await usersCollection.updateOne(
+    {
+      _id: new ObjectId(userId),
+    },
+    {
+      $set: {
+        firstName,
+        lastName,
+        about,
+        email,
+        username,
+      },
+    },
   );
 }
 
@@ -635,6 +687,8 @@ export {
   getChat,
   isUsernameAvailable,
   isEmailAlreadyRegistered,
+  oAuthGoogleLoginFinder,
+  updateOAuthProfile,
   isUserRestricted,
   createNewAccount,
   setProfilePictureUrl,
@@ -645,6 +699,7 @@ export {
   blockUser,
   unblockUser,
   getMessages,
+  updateProfile,
 
   // Cloudflare
   provideSignedURL,

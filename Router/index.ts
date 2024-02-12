@@ -6,6 +6,8 @@ import {
   blockedUsersRequestHandler,
   blockHandler,
   unblockHandler,
+  updateProfileHandler,
+  serviceConnectHandler,
 } from "../API/Authenticated/endpoint_handler";
 import { emailValidation, loginAuthentication, oAuthHandler } from "../API/endpoint_handler";
 import { removeRData } from "../Redis_Helper";
@@ -35,6 +37,9 @@ route.get("/api/findUser", userSearchHandler);
 route.get("/api/blocked_users", blockedUsersRequestHandler);
 route.get("/api/block", blockHandler);
 route.get("/api/unblock", unblockHandler);
+route.get("/api/username_checker", userNameChecker);
+route.post("/api/update_profile", updateProfileHandler);
+route.post("/api/connect_oauth", serviceConnectHandler);
 
 route.get("/api/log_out", async (req, res) => {
   if (req.headers.authorization) {
