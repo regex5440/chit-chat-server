@@ -9,12 +9,14 @@ import {
   getBlockedUsers,
   updateProfile,
   updateOAuthProfile,
+  deleteAccount,
 } from "../../MongoDB_Helper";
 import { generateLoginToken } from "../../utils/jwt";
 import { getPostSignedURL, uploadProfileImage } from "../../CloudFlare_Helper";
 import { ErrorResponse, SuccessResponse } from "../../utils/generator";
 import { RequestHandler } from "../../@types";
 import { OAuth2Client } from "google-auth-library";
+import { removeRData } from "../../Redis_Helper";
 
 const userProfileData: RequestHandler = async (req, res) => {
   try {
@@ -192,6 +194,26 @@ const registerUser: RequestHandler = async (req, res) => {
   }
 };
 
+const accountDeletionHandler: RequestHandler = async (req, res) => {
+  try {
+    if (req.userId) {
+      await deleteAccount(req.userId);
+      logoutHandler(req, res);
+    }
+  } catch (e) {
+    console.log(e);
+    res.status(500).send(ErrorResponse({ message: "Something went wrong!" }));
+  }
+};
+
+const logoutHandler: RequestHandler = async (req, res) => {
+  if (req.headers.authorization) {
+    await removeRData(req.headers.authorization.split(" ")?.[1]);
+    res.send("ok");
+  }
+  res.status(401).send();
+};
+
 export {
   userProfileData,
   userNameChecker,
@@ -202,4 +224,6 @@ export {
   unblockHandler,
   updateProfileHandler,
   serviceConnectHandler,
+  accountDeletionHandler,
+  logoutHandler,
 };

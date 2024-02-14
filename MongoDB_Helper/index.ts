@@ -58,12 +58,12 @@ async function getConnectionData(userId: string, connectionId: string) {
 }
 
 //?   Login
-async function verifyUser(username: string, password: string) {
+async function verifyUser(usernameOrEmail: string, password: string) {
   const user = await usersCollection.findOne({
-    $or: [{ username }, { email: username }],
+    $or: [{ usernameOrEmail }, { email: usernameOrEmail }],
   });
   const result = { userExists: false, credentialsMatch: false, userId: "" };
-  if (user) {
+  if (user && user.deleted !== true) {
     result.userExists = true;
     if (user.password === password) {
       result.credentialsMatch = true;
@@ -676,6 +676,37 @@ async function provideSignedURL(
   }
   return filesWithSignedURL;
 }
+
+async function deleteAccount(userId: string) {
+  return usersCollection.updateOne(
+    {
+      _id: new ObjectId(userId),
+    },
+    {
+      $set: {
+        deleted: true,
+        deleted_at: new Date(),
+        firstName: "Deleted",
+        lastName: "User",
+        username: "",
+        email: "",
+        password: "",
+        avatar: {
+          url: "",
+          key: "",
+        },
+        connections: {},
+        blocked_ids: [],
+        oAuth: {
+          google: {
+            enabled: false,
+            email: "",
+          },
+        },
+      },
+    },
+  );
+}
 export {
   //MongoDBClient
   mongoDbClient,
@@ -686,6 +717,7 @@ export {
   addConnection,
   addMessage,
   deleteMessage,
+  deleteAccount,
   updateMessage,
   updateSeenMessages,
   acceptMessageRequest,

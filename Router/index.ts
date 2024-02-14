@@ -8,6 +8,8 @@ import {
   unblockHandler,
   updateProfileHandler,
   serviceConnectHandler,
+  accountDeletionHandler,
+  logoutHandler,
 } from "../API/Authenticated/endpoint_handler";
 import { emailValidation, loginAuthentication, oAuthHandler } from "../API/endpoint_handler";
 import { removeRData } from "../Redis_Helper";
@@ -40,14 +42,9 @@ route.get("/api/unblock", unblockHandler);
 route.get("/api/username_checker", userNameChecker);
 route.post("/api/update_profile", updateProfileHandler);
 route.post("/api/connect_oauth", serviceConnectHandler);
+route.post("/api/delete_account", accountDeletionHandler);
 
-route.get("/api/log_out", async (req, res) => {
-  if (req.headers.authorization) {
-    await removeRData(req.headers.authorization.split(" ")?.[1]);
-    res.send("ok");
-  }
-  res.status(401).send();
-});
+route.get("/api/log_out", logoutHandler);
 
 route.get("/", (req, res) => {
   res.redirect(301, "https://cc.hdxdev.in");
