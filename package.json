@@ -13,8 +13,7 @@
     "lint": "eslint . && prettier --check .",
     "format": "eslint . --fix",
     "buildImage": "docker build -t harshdagar/chit-chat-server .",
-    "runImage": "docker compose up -d",
-    "deploy": "heroku container:push web -a=chit-chat-server && heroku container:release web -a=chit-chat-server"
+    "runImage": "docker compose up -d"
   },
   "husky": {
     "hooks": {
