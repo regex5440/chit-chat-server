@@ -258,6 +258,7 @@ async function createNewAccount({
   email,
   password,
   username,
+  oAuth = { email: "", service: "google" },
 }: {
   about: string;
   firstName: string;
@@ -265,6 +266,10 @@ async function createNewAccount({
   email: string;
   password: string;
   username: string;
+  oAuth?: {
+    service: "google";
+    email: string;
+  };
 }) {
   const newUser = await usersCollection.insertOne({
     profile_type: "person",
@@ -286,6 +291,12 @@ async function createNewAccount({
     username,
     created_at: new Date(),
     blocked_ids: [],
+    oAuth: {
+      [oAuth.service]: {
+        enabled: oAuth?.service ? true : false,
+        email: oAuth?.email || "",
+      },
+    },
   });
   console.log(newUser);
   return newUser;

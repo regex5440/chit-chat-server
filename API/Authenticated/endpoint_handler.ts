@@ -158,8 +158,8 @@ const userSearchHandler: RequestHandler = async (req, res) => {
 const registerUser: RequestHandler = async (req, res) => {
   try {
     console.log(Object.keys(req.body).length);
-    if (Object.keys(req.body).length === 7) {
-      const { about, usernameSelected, firstName, lastName, email, password, hasImage } = req.body;
+    if (Object.keys(req.body).length === 8) {
+      const { about, usernameSelected, firstName, lastName, email, password, hasImage, oAuth } = req.body;
       const usernameAvailable = await isUsernameAvailable(usernameSelected);
       if (usernameAvailable && email === req.emailAddress) {
         const user = await createNewAccount({
@@ -169,6 +169,10 @@ const registerUser: RequestHandler = async (req, res) => {
           email: email.trim(),
           password: password.trim(),
           username: usernameSelected.trim(),
+          oAuth: {
+            service: oAuth.service,
+            email: oAuth.email,
+          },
         });
         const generatedUserId = user.insertedId.toString();
         const token = await generateLoginToken(generatedUserId);
