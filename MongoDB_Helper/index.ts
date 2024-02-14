@@ -60,7 +60,7 @@ async function getConnectionData(userId: string, connectionId: string) {
 //?   Login
 async function verifyUser(usernameOrEmail: string, password: string) {
   const user = await usersCollection.findOne({
-    $or: [{ usernameOrEmail }, { email: usernameOrEmail }],
+    $or: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
   });
   const result = { userExists: false, credentialsMatch: false, userId: "" };
   if (user && user.deleted !== true) {
