@@ -24,6 +24,7 @@ const ProfileDataProjection = Object.freeze({
   avatar: "$avatar",
   last_active: "$last_active",
   username: "$username",
+  deleted: "$deleted",
 });
 
 const ProfileSearchResults = Object.freeze({

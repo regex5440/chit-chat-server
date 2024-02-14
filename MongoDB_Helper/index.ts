@@ -695,8 +695,10 @@ async function deleteAccount(userId: string) {
           url: "",
           key: "",
         },
+        about: "",
         connections: {},
         blocked_ids: [],
+        status: USER_STATUS.OFFLINE,
         oAuth: {
           google: {
             enabled: false,
