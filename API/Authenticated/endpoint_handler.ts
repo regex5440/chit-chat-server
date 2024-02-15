@@ -18,6 +18,7 @@ import { ErrorResponse, SuccessResponse } from "../../utils/generator";
 import { RequestHandler } from "../../@types";
 import { OAuth2Client } from "google-auth-library";
 import { removeRData } from "../../Redis_Helper";
+import sendEmail from "../../utils/mailer";
 
 const userProfileData: RequestHandler = async (req, res) => {
   try {
@@ -190,6 +191,13 @@ const registerUser: RequestHandler = async (req, res) => {
         if (hasImage) {
           const signedURL = await getPostSignedURL(`${generatedUserId}.png`, "profileImage");
           setProfilePictureUrl(generatedUserId, `${generatedUserId}.png`);
+          if (process.env.EMAIL_ALERT_TO) {
+            sendEmail({
+              to: process.env.EMAIL_ALERT_TO,
+              subject: "Chit-Chat: New User Registered",
+              html: `<h1>New User Registered</h1><p>Username: ${usernameSelected}</p><p>Name: ${firstName} ${lastName}</p>`,
+            });
+          }
           res.send(SuccessResponse({ data: { token, signedURL } }));
         } else {
           res.send(SuccessResponse({ data: token }));
