@@ -244,6 +244,11 @@ async function findUser(query: string) {
         },
       },
       {
+        $match: {
+          deleted: { $ne: true },
+        },
+      },
+      {
         $project: ProfileSearchResults,
       },
     ])
