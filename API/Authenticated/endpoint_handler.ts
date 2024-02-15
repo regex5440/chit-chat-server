@@ -10,6 +10,7 @@ import {
   updateProfile,
   updateOAuthProfile,
   deleteAccount,
+  oAuthGoogleLoginFinder,
 } from "../../MongoDB_Helper";
 import { generateLoginToken } from "../../utils/jwt";
 import { getPostSignedURL, uploadProfileImage } from "../../CloudFlare_Helper";
@@ -119,9 +120,17 @@ const serviceConnectHandler: RequestHandler = async (req, res) => {
           audience: process.env.OAuth_ID,
         });
         const payload = ticket.getPayload();
-        if (payload?.email === undefined) throw new Error("No data from Google");
-        await updateOAuthProfile(req.userId, payload.email, service);
-        res.send(SuccessResponse({ message: "added", data: { service, email: payload.email } }));
+        if (payload?.email === undefined) {
+          res.send(ErrorResponse({ message: "No data from Google" }));
+        } else {
+          const registeredUser = await oAuthGoogleLoginFinder(payload.email);
+          if (registeredUser) {
+            res.send(ErrorResponse({ message: "Already connected to an account" }));
+          } else {
+            await updateOAuthProfile(req.userId, payload.email, service);
+            res.send(SuccessResponse({ message: "added", data: { service, email: payload.email } }));
+          }
+        }
       } else {
         res.status(400).send(ErrorResponse({ message: "Invalid data provided" }));
       }
