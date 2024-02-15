@@ -172,7 +172,7 @@ const registerUser: RequestHandler = async (req, res) => {
           password: password.trim(),
           username: usernameSelected.trim(),
           oAuth: {
-            service: oAuth.service,
+            service: oAuth.service || "google",
             email: oAuth.email,
           },
         });

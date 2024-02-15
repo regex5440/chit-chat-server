@@ -293,7 +293,7 @@ async function createNewAccount({
     blocked_ids: [],
     oAuth: {
       [oAuth.service]: {
-        enabled: oAuth?.service ? true : false,
+        enabled: oAuth?.email ? true : false,
         email: oAuth?.email || "",
       },
     },
