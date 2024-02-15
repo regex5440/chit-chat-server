@@ -10,7 +10,7 @@ const UserProfileProjection = Object.freeze({
   last_active: "$last_active",
   username: "$username",
   email: "$email",
-  oauth: "$oauth",
+  oAuth: "$oAuth",
 });
 
 const ProfileDataProjection = Object.freeze({
