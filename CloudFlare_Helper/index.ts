@@ -84,4 +84,16 @@ const removeAsset = async (keys: string[]) => {
   return Promise.all(keys.map((k) => s3Client.send(new DeleteObjectCommand({ Bucket, Key: k }))));
 };
 
-export { uploadProfileImage, getPostSignedURL, removeDirectory, removeAsset };
+const removeProfileImage = async (key: string) => {
+  if (!process.env.S3_ProfileData_Bucket) {
+    throw new Error("S3_ProfileData_Bucket is not defined");
+  }
+  return s3Client.send(
+    new DeleteObjectCommand({
+      Bucket: process.env.S3_ProfileData_Bucket,
+      Key: key,
+    }),
+  );
+};
+
+export { uploadProfileImage, getPostSignedURL, removeDirectory, removeAsset, removeProfileImage };

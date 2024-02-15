@@ -4,7 +4,7 @@ import { MongoClient, ObjectId, UpdateFilter } from "mongodb";
 import { ProfileDataProjection, UserProfileProjection, ProfileSearchResults } from "./projections";
 import { USER_STATUS } from "../utils/enums";
 import { MessageObject, MessageUpdate } from "../@types";
-import { getPostSignedURL, removeAsset, removeDirectory } from "../CloudFlare_Helper";
+import { getPostSignedURL, removeAsset, removeDirectory, removeProfileImage } from "../CloudFlare_Helper";
 
 const mongoDbClient = new MongoClient(
   `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
@@ -204,7 +204,7 @@ async function isEmailAlreadyRegistered(email_address: string) {
 
 async function oAuthGoogleLoginFinder(email: string) {
   const user = await usersCollection.findOne({
-    "oauth.google.email": email,
+    "oAuth.google.email": email,
   });
   return user ? user._id : false;
 }
@@ -222,7 +222,7 @@ async function updateOAuthProfile(userId: string, oauthEmail: string, service: "
     },
     {
       $set: {
-        oauth: updateQuery,
+        oAuth: updateQuery,
       },
     },
   );
@@ -678,16 +678,14 @@ async function provideSignedURL(
 }
 
 async function deleteAccount(userId: string) {
+  await removeProfileImage(`${userId}.png`);
+
   return usersCollection.updateOne(
     {
       _id: new ObjectId(userId),
     },
     {
-      $set: {
-        deleted: true,
-        deleted_at: new Date(),
-        firstName: "Deleted",
-        lastName: "User",
+      $unset: {
         username: "",
         email: "",
         password: "",
@@ -705,6 +703,13 @@ async function deleteAccount(userId: string) {
             email: "",
           },
         },
+        last_active: "",
+      },
+      $set: {
+        deleted: true,
+        deleted_at: new Date(),
+        firstName: "Deleted",
+        lastName: "User",
       },
     },
   );
