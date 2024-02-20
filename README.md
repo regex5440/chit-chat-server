@@ -11,7 +11,7 @@
 
 ## Node Version
 
-> `v18.14.0`
+> >=`v18.14.0`
 
 ## Environment
 
@@ -24,17 +24,19 @@ DB_UserName=<MONGODB_USERNAME>
 DB_PassWord=<MONGODB_PASSWORD>
 TOKEN_KEY=<YOUR KEY FOR JWT SIGNATURE>
 SIGNUP_TOKEN_KEY=<YOUR KEY FOR JWT SIGNATURE (Same or different from TOKEN_KEY)>
-EMAIL_SERVICE=<Email Service Name>
-EMAIL_USERNAME=<Email Username>
+EMAIL_SERVICE=imps #imps should be default
+EMAIL_USERNAME=<Email Username>         #Used by nodemailer to provide mailing service
 EMAIL_PASSWORD=<Email Password>
 AWS_Endpoint=<AWS Endpoint URL (including account id)>
 AWS_Access_KeyID=<TOKEN ACCESS ID>
 AWS_SecretAccess_Key=<TOKEN SECRET ACCESS KEY>
-S3_ProfileData_Bucket=<Bucket for profile pictures>
-S3_Assets_Bucket=<Bucket for attachments>
+S3_ProfileData_Bucket=<Bucket name for profile pictures>
+S3_Assets_Bucket=<Bucket name for attachments>
 OAuth_ID=<OAuth ID from OAuth Provider>
 OAuth_Key=<OAuth Key from OAuth Provider>
-Redis_Password=<Redis Cloud DB password for production>
+Redis_Password=<Redis Cloud DB password>
+WORKER_LIMIT=<Number to limit the clusters>
+EMAIL_ALERT_TO=<Optional email address to send updates for service down>
 ```
 
 > Replace the `<---HINT---->` with your own values.
