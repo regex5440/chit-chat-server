@@ -11,7 +11,7 @@
 
 ## Node Version
 
-> >=`v18.14.0`
+> \>= `v18.14.0`
 
 ## Environment
 
