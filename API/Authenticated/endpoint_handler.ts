@@ -24,6 +24,9 @@ const userProfileData: RequestHandler = async (req, res) => {
   try {
     if (!req.userId) return res.status(401).send(ErrorResponse({ message: "Unauthorized" }));
     const profileData = await getProfileById(req.userId, true);
+    if (profileData.email === "harshdagar@hdxdev.in") {
+      profileData.testAccount = true;
+    }
     res.send(SuccessResponse({ data: profileData }));
   } catch (e) {
     console.log("/ProfileAPIError:", e);
