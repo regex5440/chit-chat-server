@@ -48,8 +48,8 @@ const provideOTPAuth = async (emailAddress: string, resend: boolean | null, ip_a
     };
   } else if (resend || OTPAuth[ip_address] === undefined) {
     const newOTP = Math.trunc(Math.random() * 1000000);
-    const info = await sendOTPMail(emailAddress, newOTP);
-    if (info?.messageId) {
+    const info = await sendOTPMail(emailAddress, newOTP).then((res) => res.json());
+    if (info?.message === "Queued") {
       if (!OTPAuth[ip_address]) {
         OTPAuth[ip_address] = {
           code_list: new Set([newOTP]),
