@@ -1,17 +1,11 @@
-import { config } from "dotenv";
-config();
-import { MongoClient, ObjectId, UpdateFilter } from "mongodb";
-import { ProfileDataProjection, UserProfileProjection, ProfileSearchResults } from "./projections";
+import { ObjectId, UpdateFilter } from "mongodb";
+import { ProfileDataProjection, UserProfileProjection, ProfileSearchResults } from "../db/schema/projections";
 import { USER_STATUS } from "../utils/enums";
-import { MessageObject, MessageUpdate } from "../@types";
-import { getPostSignedURL, removeAsset, removeDirectory, removeProfileImage } from "../CloudFlare_Helper";
+import { MessageObject, MessageUpdate } from "../../@types";
+import { getPostSignedURL, removeAsset, removeDirectory, removeProfileImage } from "../utils/library/cloudflare";
+import db from "../db/client";
 
-const mongoDbClient = new MongoClient(
-  `mongodb+srv://${process.env.DB_UserName}:${encodeURIComponent(
-    process.env.DB_PassWord || "",
-  )}@cluster0.qsbznrs.mongodb.net/?retryWrites=true&w=majority`,
-);
-const db = mongoDbClient.db("chit-chat");
+//TODO: Separate the functions based on collections
 const chatsCollection = db.collection("chats"),
   usersCollection = db.collection("users");
 /*
@@ -720,8 +714,6 @@ async function deleteAccount(userId: string) {
   );
 }
 export {
-  //MongoDBClient
-  mongoDbClient,
   //Collections
   chatsCollection,
   usersCollection,

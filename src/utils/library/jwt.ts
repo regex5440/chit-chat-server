@@ -1,8 +1,8 @@
 import { config } from "dotenv";
 config();
 import * as jwt from "jsonwebtoken";
-import { setRData, getRData, removeRData } from "../Redis_Helper";
-import { getProfileById } from "../MongoDB_Helper";
+import { setRData, getRData, removeRData } from "./redis";
+import { getProfileById } from "../../controllers";
 
 // type TokenData_LOGIN = { userId: string };
 type TokenData_SIGNUP = { emailAddress: string };

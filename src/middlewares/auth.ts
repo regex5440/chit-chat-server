@@ -1,6 +1,6 @@
-import { validateToken, refreshToken } from "../utils/jwt";
+import { validateToken, refreshToken } from "../utils/library/jwt";
 import { ErrorResponse, SuccessResponse } from "../utils/generator";
-import { MiddleWare } from "../@types";
+import { MiddleWare } from "../../@types";
 
 const tokenAuthority: MiddleWare = async (req, res, next) => {
   const authToken = req.headers.authorization?.split(" ")[1];

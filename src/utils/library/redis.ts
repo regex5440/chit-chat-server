@@ -3,7 +3,7 @@ import { config } from "dotenv";
 config();
 
 const rClient = redis.createClient(
-  process.env.NODE_ENV === "production"
+  process.env.NODE_ENV !== "production"
     ? {
         password: process.env.Redis_Password,
         socket: {

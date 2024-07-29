@@ -15,15 +15,14 @@ import {
   getMessages,
   getProfileById,
   isUserRestricted,
-  mongoDbClient,
   provideSignedURL,
   updateMessage,
   updateSeenMessages,
   updateStatus,
   updateUnseenMsgCount,
-} from "./MongoDB_Helper";
-import { signupTokenAuthority, tokenAuthority } from "./API/middleware";
-import route from "./Router";
+} from "./src/controllers";
+import { signupTokenAuthority, tokenAuthority } from "./src/middlewares/auth";
+import route from "./src/utils/library/router";
 import { existsSync } from "fs";
 import path from "path";
 // import mongoose from "mongoose";
@@ -32,11 +31,12 @@ import cluster from "cluster";
 import { setupMaster, setupWorker } from "@socket.io/sticky";
 import { setupPrimary, createAdapter } from "@socket.io/cluster-adapter";
 import process from "process";
-import { validateToken } from "./utils/jwt";
-import { SOCKET_HANDLERS, USER_STATUS } from "./utils/enums";
+import { validateToken } from "./src/utils/library/jwt";
+import { SOCKET_HANDLERS, USER_STATUS } from "./src/utils/enums";
 import { MessageUpdate } from "./@types/index";
-import { getRData } from "./Redis_Helper/index";
-import sendEmail from "./utils/mailer";
+import { getRData } from "./src/utils/library/redis";
+import sendEmail from "./src/utils/mailer";
+import { mongoDbClient } from "./src/db/client";
 
 const corsPolicy: cors.CorsOptions | cors.CorsOptionsDelegate | undefined = {
   origin: process.env.Client_URL?.includes(",") ? process.env.Client_URL.split(",") : process.env.Client_URL,
@@ -115,7 +115,7 @@ try {
     });
   } else {
     const expressApp = express();
-
+    //TODO: Separate the socket.io server to a different file
     const server = createServer(expressApp);
     const io = new Server(server, {
       cors: corsPolicy,

@@ -10,8 +10,8 @@ import {
   serviceConnectHandler,
   accountDeletionHandler,
   logoutHandler,
-} from "../API/Authenticated/endpoint_handler";
-import { emailValidation, loginAuthentication, oAuthHandler } from "../API/endpoint_handler";
+} from "../../API/Authenticated/endpoint_handler";
+import { emailValidation, loginAuthentication, oAuthHandler } from "../../API/endpoint_handler";
 
 import express from "express";
 

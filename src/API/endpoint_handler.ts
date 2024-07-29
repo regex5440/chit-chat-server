@@ -1,10 +1,10 @@
-import { isEmailAlreadyRegistered, oAuthGoogleLoginFinder, verifyUser } from "../MongoDB_Helper";
-import { provideOTPAuth, verifyOTPAuth } from "../utils/2StepAuth";
+import { isEmailAlreadyRegistered, oAuthGoogleLoginFinder, verifyUser } from "../controllers";
+import { provideOTPAuth, verifyOTPAuth } from "../utils/2-step-auth";
 import { REGEXP } from "../utils/enums";
-import { generateLoginToken, generateNewToken } from "../utils/jwt";
+import { generateLoginToken, generateNewToken } from "../utils/library/jwt";
 import { SuccessResponse, ErrorResponse } from "../utils/generator";
 import { OAuth2Client } from "google-auth-library";
-import { RequestHandler } from "../@types";
+import { RequestHandler } from "../../@types";
 
 //Login Page
 const loginAuthentication: RequestHandler = async (req, res) => {

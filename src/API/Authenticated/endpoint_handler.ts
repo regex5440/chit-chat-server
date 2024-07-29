@@ -11,13 +11,13 @@ import {
   updateOAuthProfile,
   deleteAccount,
   oAuthGoogleLoginFinder,
-} from "../../MongoDB_Helper";
-import { generateLoginToken } from "../../utils/jwt";
-import { getPostSignedURL, uploadProfileImage } from "../../CloudFlare_Helper";
+} from "../../controllers";
+import { generateLoginToken } from "../../utils/library/jwt";
+import { getPostSignedURL, uploadProfileImage } from "../../utils/library/cloudflare";
 import { ErrorResponse, SuccessResponse } from "../../utils/generator";
-import { RequestHandler } from "../../@types";
+import { RequestHandler } from "../../../@types";
 import { OAuth2Client } from "google-auth-library";
-import { removeRData } from "../../Redis_Helper";
+import { removeRData } from "../../utils/library/redis";
 import sendEmail from "../../utils/mailer";
 
 const userProfileData: RequestHandler = async (req, res) => {
