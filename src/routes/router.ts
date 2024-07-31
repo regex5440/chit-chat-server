@@ -7,11 +7,10 @@ import {
   blockHandler,
   unblockHandler,
   updateProfileHandler,
-  serviceConnectHandler,
   accountDeletionHandler,
   logoutHandler,
-} from "../../API/Authenticated/endpoint_handler";
-import { emailValidation, loginAuthentication, oAuthHandler } from "../../API/endpoint_handler";
+} from "./account";
+import { emailValidation, loginAuthentication, oAuthHandler, serviceConnectHandler } from "./auth";
 
 import express from "express";
 

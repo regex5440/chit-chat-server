@@ -22,7 +22,7 @@ import {
   updateUnseenMsgCount,
 } from "./src/controllers";
 import { signupTokenAuthority, tokenAuthority } from "./src/middlewares/auth";
-import route from "./src/utils/library/router";
+import route from "./src/routes/router";
 import { existsSync } from "fs";
 import path from "path";
 // import mongoose from "mongoose";

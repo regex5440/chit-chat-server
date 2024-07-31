@@ -1,10 +1,10 @@
-import { isEmailAlreadyRegistered, oAuthGoogleLoginFinder, verifyUser } from "../controllers";
+import { isEmailAlreadyRegistered, oAuthGoogleLoginFinder, updateOAuthProfile, verifyUser } from "../controllers";
 import { provideOTPAuth, verifyOTPAuth } from "../utils/2-step-auth";
 import { REGEXP } from "../utils/enums";
 import { generateLoginToken, generateNewToken } from "../utils/library/jwt";
 import { SuccessResponse, ErrorResponse } from "../utils/generator";
-import { OAuth2Client } from "google-auth-library";
 import { RequestHandler } from "../../@types";
+import verifyGoogleToken from "../utils/library/oauth";
 
 //Login Page
 const loginAuthentication: RequestHandler = async (req, res) => {
@@ -71,11 +71,7 @@ const oAuthHandler: RequestHandler = async (req, res) => {
   const credential = req.body?.credential || undefined;
   if (credential) {
     try {
-      const client = new OAuth2Client();
-      const ticket = await client.verifyIdToken({
-        idToken: credential,
-        audience: process.env.OAuth_ID,
-      });
+      const ticket = await verifyGoogleToken(credential);
       const payload = ticket.getPayload();
       if (payload?.email === undefined) throw new Error("No data from Google");
       const registeredUser = await oAuthGoogleLoginFinder(payload.email);
@@ -108,4 +104,33 @@ const oAuthHandler: RequestHandler = async (req, res) => {
     res.status(400).send(ErrorResponse({ message: "Invalid data" }));
   }
 };
-export { loginAuthentication, emailValidation, oAuthHandler };
+
+const serviceConnectHandler: RequestHandler = async (req, res) => {
+  try {
+    if (req.userId && req.body) {
+      const { service, credential } = req.body;
+      if (service && credential) {
+        const ticket = await verifyGoogleToken(credential);
+        const payload = ticket.getPayload();
+        if (payload?.email === undefined) {
+          res.send(ErrorResponse({ message: "No data from Google" }));
+        } else {
+          const registeredUser = await oAuthGoogleLoginFinder(payload.email);
+          if (registeredUser) {
+            res.send(ErrorResponse({ message: "Already connected to an account" }));
+          } else {
+            await updateOAuthProfile(req.userId, payload.email, service);
+            res.send(SuccessResponse({ message: "added", data: { service, email: payload.email } }));
+          }
+        }
+      } else {
+        res.status(400).send(ErrorResponse({ message: "Invalid data provided" }));
+      }
+    }
+  } catch (e) {
+    console.log(e);
+    res.status(500).send(ErrorResponse({ message: "Something went wrong!" }));
+  }
+};
+
+export { loginAuthentication, emailValidation, oAuthHandler, serviceConnectHandler };
