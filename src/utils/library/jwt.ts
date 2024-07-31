@@ -2,7 +2,7 @@ import { config } from "dotenv";
 config();
 import * as jwt from "jsonwebtoken";
 import { setRData, getRData, removeRData } from "./redis";
-import { getProfileById } from "../../controllers";
+import { getProfileById } from "../../controllers/account";
 
 // type TokenData_LOGIN = { userId: string };
 type TokenData_SIGNUP = { emailAddress: string };

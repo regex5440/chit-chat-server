@@ -4,28 +4,22 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import {
   acceptMessageRequest,
-  addConnection,
   addMessage,
-  clearChat,
-  connectionsData,
   deleteChat,
   deleteMessage,
+  emptyChatMessages,
   getChat,
-  getConnectionData,
   getMessages,
-  getProfileById,
-  isUserRestricted,
   provideSignedURL,
   updateMessage,
   updateSeenMessages,
-  updateStatus,
-  updateUnseenMsgCount,
-} from "./src/controllers";
+} from "./src/controllers/chat";
 import { signupTokenAuthority, tokenAuthority } from "./src/middlewares/auth";
 import route from "./src/routes/router";
 import { existsSync } from "fs";
 import path from "path";
 // import mongoose from "mongoose";
+import { ObjectId } from "mongodb";
 import { availableParallelism, platform } from "os";
 import cluster from "cluster";
 import { setupMaster, setupWorker } from "@socket.io/sticky";
@@ -37,6 +31,18 @@ import { MessageUpdate } from "./@types/index";
 import { getRData } from "./src/utils/library/redis";
 import sendEmail from "./src/utils/mailer";
 import { mongoDbClient } from "./src/db/client";
+import {
+  addConnection,
+  clearChatMessageCount,
+  deleteChatConnections,
+  getConnectionData,
+  getConnectionsData,
+  getProfileById,
+  isUserRestricted,
+  updateStatus,
+  updateUnseenMsgCount,
+} from "./src/controllers/account";
+import { removeDirectory } from "./src/utils/library/cloudflare";
 
 const corsPolicy: cors.CorsOptions | cors.CorsOptionsDelegate | undefined = {
   origin: process.env.Client_URL?.includes(",") ? process.env.Client_URL.split(",") : process.env.Client_URL,
@@ -145,14 +151,17 @@ try {
         }
       }
 
-      const { chatIds, chats, connections, hasData } = await connectionsData(loggedInUserId);
+      const connections = await getConnectionsData(loggedInUserId);
+      const chatIds = Object.values(connections).map((chat) => new ObjectId((chat as { chat_id: string }).chat_id));
+      const chatsArray = await getChat(chatIds);
+
       socket.emit(SOCKET_HANDLERS.CONNECTION.ConnectionData, {
-        hasData,
-        chats,
+        hasData: chatsArray.length > 0,
+        chats: chatsArray,
         connections,
       });
       if (chatIds.length > 0) {
-        socket.join(chatIds);
+        socket.join(chatIds.map((chatId) => chatId.toString()));
       }
       socket.join(`${loggedInUserId}-req`); //New Request Room
 
@@ -292,12 +301,12 @@ try {
       });
 
       socket.on(SOCKET_HANDLERS.CHAT.ClearAll, async ({ chatId, fromId, toId }) => {
-        await clearChat(chatId, fromId, toId);
+        await Promise.all([clearChatMessageCount(fromId, toId), emptyChatMessages(chatId), removeDirectory(`chat_${chatId}`)]);
         socket.to(chatId).emit(SOCKET_HANDLERS.CHAT.ClearAll, chatId, fromId);
       });
 
       socket.on(SOCKET_HANDLERS.CONNECTION.RemoveConnection, async (chatId, { fromUserId, toUserId, toBlock }) => {
-        await deleteChat(chatId, fromUserId, toUserId, toBlock);
+        await Promise.all([deleteChatConnections(fromUserId, toUserId, toBlock), deleteChat(chatId), removeDirectory(`chat_${chatId}`)]);
         socket.to(chatId).emit(SOCKET_HANDLERS.CONNECTION.RemoveConnection, fromUserId, chatId);
         socket.leave(chatId);
       });

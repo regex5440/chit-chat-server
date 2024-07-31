@@ -1,4 +1,4 @@
-import { isEmailAlreadyRegistered, oAuthGoogleLoginFinder, updateOAuthProfile, verifyUser } from "../controllers";
+import { isEmailAlreadyRegistered, oAuthGoogleLoginFinder, updateOAuthProfile, verifyUser } from "../controllers/account";
 import { provideOTPAuth, verifyOTPAuth } from "../utils/2-step-auth";
 import { REGEXP } from "../utils/enums";
 import { generateLoginToken, generateNewToken } from "../utils/library/jwt";

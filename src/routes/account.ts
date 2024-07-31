@@ -9,9 +9,9 @@ import {
     getBlockedUsers,
     updateProfile,
     deleteAccount,
-  } from "../controllers";
+  } from "../controllers/account";
   import { generateLoginToken } from "../utils/library/jwt";
-  import { getPostSignedURL } from "../utils/library/cloudflare";
+  import { getPostSignedURL, removeProfileImage } from "../utils/library/cloudflare";
   import { ErrorResponse, SuccessResponse } from "../utils/generator";
   import { RequestHandler } from "../../@types";
   import { removeRData } from "../utils/library/redis";
@@ -182,7 +182,7 @@ import {
   const accountDeletionHandler: RequestHandler = async (req, res) => {
     try {
       if (req.userId) {
-        await deleteAccount(req.userId);
+        await Promise.all([deleteAccount(req.userId), removeProfileImage(`${req.userId}.png`)]);
         logoutHandler(req, res);
       }
     } catch (e) {
