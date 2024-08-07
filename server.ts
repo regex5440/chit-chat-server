@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import { Server } from "socket.io";
 import { createServer } from "http";
-import { signupTokenAuthority, tokenAuthority } from "./src/middlewares/auth";
+import { signupTokenAuthority, tokenAuthority } from "@middlewares/auth";
 import route from "./src/routes/router";
 import { existsSync } from "fs";
 import path from "path";
@@ -11,9 +11,9 @@ import cluster from "cluster";
 import { setupMaster, setupWorker } from "@socket.io/sticky";
 import { setupPrimary, createAdapter } from "@socket.io/cluster-adapter";
 import process from "process";
-import sendEmail from "./src/utils/mailer";
-import { mongoDbClient } from "./src/db/client";
-import socketHandlers from "@utils/library/socker.io/routes";
+import sendEmail from "@utils/mailer";
+import { mongoDbClient } from "@db/client";
+import socketHandlers from "@lib/socker.io/routes";
 
 const corsPolicy: cors.CorsOptions | cors.CorsOptionsDelegate | undefined = {
   origin: process.env.Client_URL?.includes(",") ? process.env.Client_URL.split(",") : process.env.Client_URL,

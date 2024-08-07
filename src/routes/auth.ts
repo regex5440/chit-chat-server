@@ -1,10 +1,10 @@
-import { isEmailAlreadyRegistered, oAuthGoogleLoginFinder, updateOAuthProfile, verifyUser } from "../controllers/account";
-import { provideOTPAuth, verifyOTPAuth } from "../utils/2-step-auth";
-import { REGEXP } from "../utils/enums";
-import { generateLoginToken, generateNewToken } from "../utils/library/jwt";
-import { SuccessResponse, ErrorResponse } from "../utils/generator";
-import { RequestHandler } from "../../@types";
-import verifyGoogleToken from "../utils/library/oauth";
+import { isEmailAlreadyRegistered, oAuthGoogleLoginFinder, updateOAuthProfile, verifyUser } from "@controllers/account";
+import { provideOTPAuth, verifyOTPAuth } from "@utils/2-step-auth";
+import { REGEXP } from "@utils/enums";
+import { generateLoginToken, generateNewToken } from "@lib/jwt";
+import { SuccessResponse, ErrorResponse } from "@utils/generator";
+import { RequestHandler } from "@types";
+import verifyGoogleToken from "@lib/oauth";
 
 //Login Page
 const loginAuthentication: RequestHandler = async (req, res) => {

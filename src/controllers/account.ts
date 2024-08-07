@@ -1,8 +1,8 @@
 import { ObjectId, UpdateFilter } from "mongodb";
-import db from "../db/client";
-import { ProfileDataProjection, ProfileSearchResults, UserProfileProjection } from "../db/schema/projections";
-import { USER_STATUS } from "../utils/enums";
-import { MessageObject } from "../../@types";
+import db from "@db/client";
+import { ProfileDataProjection, ProfileSearchResults, UserProfileProjection } from "@db/schema/projections";
+import { USER_STATUS } from "@utils/enums";
+import { MessageObject } from "@types";
 import { createNewChat } from "./chat";
 
 const usersCollection = db.collection("users");
@@ -92,7 +92,6 @@ async function getConnectionsData(userId: string) {
     delete contact.unseen_messages_count;
     Object.assign(connections[contact.id], contact);
   });
-
 
   return connections;
 }
@@ -302,15 +301,15 @@ async function updateProfile(
 
 async function clearChatMessageCount(from: string, to: string) {
   return usersCollection.updateOne(
-      {
-        _id: new ObjectId(to),
+    {
+      _id: new ObjectId(to),
+    },
+    {
+      $set: {
+        [`connections.${from}.unseen_messages_count`]: 0,
       },
-      {
-        $set: {
-          [`connections.${from}.unseen_messages_count`]: 0,
-        },
-      },
-    );
+    },
+  );
 }
 
 async function deleteChatConnections(fromId: string, connectionId: string, toBlock = false) {
@@ -471,28 +470,27 @@ async function unblockUser(userId: string, blockedId: string) {
   );
 }
 
-
 export {
-    getProfileById,
-    getConnectionData,
-    verifyUser,
-    getConnectionsData,
-    isUsernameAvailable,
-    isEmailAlreadyRegistered,
-    oAuthGoogleLoginFinder,
-    updateOAuthProfile,
-    findUser,
-    createNewAccount,
-    setProfilePictureUrl,
-    addConnection,
-    updateUnseenMsgCount,
-    updateProfile,
-    clearChatMessageCount,
-    deleteChatConnections,
-    updateStatus,
-    isUserRestricted,
-    getBlockedUsers,
-    blockUser,
-    deleteAccount,
-    unblockUser,
-}
+  getProfileById,
+  getConnectionData,
+  verifyUser,
+  getConnectionsData,
+  isUsernameAvailable,
+  isEmailAlreadyRegistered,
+  oAuthGoogleLoginFinder,
+  updateOAuthProfile,
+  findUser,
+  createNewAccount,
+  setProfilePictureUrl,
+  addConnection,
+  updateUnseenMsgCount,
+  updateProfile,
+  clearChatMessageCount,
+  deleteChatConnections,
+  updateStatus,
+  isUserRestricted,
+  getBlockedUsers,
+  blockUser,
+  deleteAccount,
+  unblockUser,
+};

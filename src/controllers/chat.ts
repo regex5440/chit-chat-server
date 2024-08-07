@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
-import { MessageObject, MessageUpdate } from "../../@types";
-import { getPostSignedURL, removeAsset } from "../utils/library/cloudflare";
-import db from "../db/client";
+import { MessageObject, MessageUpdate } from "@types";
+import { getPostSignedURL, removeAsset } from "@lib/cloudflare";
+import db from "@db/client";
 
 const chatsCollection = db.collection("chats");
 
@@ -187,7 +187,7 @@ async function emptyChatMessages(chatId: string) {
         messages: [],
       },
     },
-  )
+  );
 }
 
 async function deleteChat(chatId: string) {
