@@ -6,11 +6,12 @@
   "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tsc",
+    "build": "tsc && esbuild server.ts --bundle --platform=node --outdir=build --minify",
     "static": "node build/server.js",
     "start": "nodemon",
     "prepare": "npx husky install",
     "lint": "eslint . && prettier --check .",
+    "type-check": "tsc",
     "format": "eslint . --fix",
     "buildImage": "docker build -t harshdagar/chit-chat-server .",
     "runImage": "docker compose up -d"
@@ -53,6 +54,7 @@
     "@typescript-eslint/eslint-plugin": "^6.12.0",
     "@typescript-eslint/parser": "^6.12.0",
     "concurrently": "^8.2.0",
+    "esbuild": "^0.23.0",
     "eslint": "^8.54.0",
     "husky": "^8.0.3",
     "nodemon": "^3.1.4",
