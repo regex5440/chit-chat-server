@@ -8,17 +8,14 @@ import {
   unblockUser,
   getBlockedUsers,
   updateProfile,
-  updateOAuthProfile,
   deleteAccount,
-  oAuthGoogleLoginFinder,
-} from "../../MongoDB_Helper";
-import { generateLoginToken } from "../../utils/jwt";
-import { getPostSignedURL, uploadProfileImage } from "../../CloudFlare_Helper";
-import { ErrorResponse, SuccessResponse } from "../../utils/generator";
-import { RequestHandler } from "../../@types";
-import { OAuth2Client } from "google-auth-library";
-import { removeRData } from "../../Redis_Helper";
-import sendEmail from "../../utils/mailer";
+} from "@controllers/account";
+import { generateLoginToken } from "@lib/jwt";
+import { getPostSignedURL, removeProfileImage } from "@lib/cloudflare";
+import { ErrorResponse, SuccessResponse } from "@utils/generator";
+import { RequestHandler } from "@types";
+import { removeRData } from "@lib/redis";
+import sendEmail from "@utils/mailer";
 
 const userProfileData: RequestHandler = async (req, res) => {
   try {
@@ -113,38 +110,6 @@ const updateProfileHandler: RequestHandler = async (req, res) => {
   }
 };
 
-const serviceConnectHandler: RequestHandler = async (req, res) => {
-  try {
-    if (req.userId && req.body) {
-      const { service, credential } = req.body;
-      if (service && credential) {
-        const client = new OAuth2Client();
-        const ticket = await client.verifyIdToken({
-          idToken: credential,
-          audience: process.env.OAuth_ID,
-        });
-        const payload = ticket.getPayload();
-        if (payload?.email === undefined) {
-          res.send(ErrorResponse({ message: "No data from Google" }));
-        } else {
-          const registeredUser = await oAuthGoogleLoginFinder(payload.email);
-          if (registeredUser) {
-            res.send(ErrorResponse({ message: "Already connected to an account" }));
-          } else {
-            await updateOAuthProfile(req.userId, payload.email, service);
-            res.send(SuccessResponse({ message: "added", data: { service, email: payload.email } }));
-          }
-        }
-      } else {
-        res.status(400).send(ErrorResponse({ message: "Invalid data provided" }));
-      }
-    }
-  } catch (e) {
-    console.log(e);
-    res.status(500).send(ErrorResponse({ message: "Something went wrong!" }));
-  }
-};
-
 const userSearchHandler: RequestHandler = async (req, res) => {
   try {
     if (req.query.q?.length === 0) {
@@ -217,7 +182,7 @@ const registerUser: RequestHandler = async (req, res) => {
 const accountDeletionHandler: RequestHandler = async (req, res) => {
   try {
     if (req.userId) {
-      await deleteAccount(req.userId);
+      await Promise.all([deleteAccount(req.userId), removeProfileImage(`${req.userId}.png`)]);
       logoutHandler(req, res);
     }
   } catch (e) {
@@ -243,7 +208,6 @@ export {
   blockHandler,
   unblockHandler,
   updateProfileHandler,
-  serviceConnectHandler,
   accountDeletionHandler,
   logoutHandler,
 };
