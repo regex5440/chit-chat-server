@@ -2,47 +2,18 @@ import express from "express";
 import cors from "cors";
 import { Server } from "socket.io";
 import { createServer } from "http";
-import {
-  acceptMessageRequest,
-  addMessage,
-  deleteChat,
-  deleteMessage,
-  emptyChatMessages,
-  getChat,
-  getMessages,
-  provideSignedURL,
-  updateMessage,
-  updateSeenMessages,
-} from "./src/controllers/chat";
 import { signupTokenAuthority, tokenAuthority } from "./src/middlewares/auth";
 import route from "./src/routes/router";
 import { existsSync } from "fs";
 import path from "path";
-// import mongoose from "mongoose";
-import { ObjectId } from "mongodb";
 import { availableParallelism, platform } from "os";
 import cluster from "cluster";
 import { setupMaster, setupWorker } from "@socket.io/sticky";
 import { setupPrimary, createAdapter } from "@socket.io/cluster-adapter";
 import process from "process";
-import { validateToken } from "./src/utils/library/jwt";
-import { SOCKET_HANDLERS, USER_STATUS } from "./src/utils/enums";
-import { MessageUpdate } from "./@types/index";
-import { getRData } from "./src/utils/library/redis";
 import sendEmail from "./src/utils/mailer";
 import { mongoDbClient } from "./src/db/client";
-import {
-  addConnection,
-  clearChatMessageCount,
-  deleteChatConnections,
-  getConnectionData,
-  getConnectionsData,
-  getProfileById,
-  isUserRestricted,
-  updateStatus,
-  updateUnseenMsgCount,
-} from "./src/controllers/account";
-import { removeDirectory } from "./src/utils/library/cloudflare";
+import socketHandlers from "@utils/library/socker.io/routes";
 
 const corsPolicy: cors.CorsOptions | cors.CorsOptionsDelegate | undefined = {
   origin: process.env.Client_URL?.includes(",") ? process.env.Client_URL.split(",") : process.env.Client_URL,
@@ -83,6 +54,7 @@ try {
 
     let cannotWakeEmailSendCount = 0;
     const x = setInterval(
+      //! PREVENT SERVER FROM SLEEPING (RENDER)
       () => {
         fetch("https://cc.api.hdxdev.in/dont_sleep")
           .then((response: any) => {
@@ -129,229 +101,7 @@ try {
     io.adapter(createAdapter());
     setupWorker(io);
     // Socket
-    io.on("connection", async (socket) => {
-      // socket.onAny((event, ...rest) => {
-      //   console.log("Socket Rooms:", socket.rooms, "\nevent:", event, "\nrest:", rest);
-      // });
-      //TODO: Optimize Authorization if possible
-      const authToken = socket.handshake.headers.authorization?.split(" ")[1] || "";
-      let loggedInUserId = "";
-      try {
-        if (authToken.length < 10) {
-          throw new Error("Invalid Auth Token");
-        }
-        const data = await validateToken(authToken, "login");
-        if (data) {
-          loggedInUserId = data.id;
-        }
-      } catch (e) {
-        if (e) {
-          socket.disconnect(true);
-          return;
-        }
-      }
-
-      const connections = await getConnectionsData(loggedInUserId);
-      const chatIds = Object.values(connections).map((chat) => new ObjectId((chat as { chat_id: string }).chat_id));
-      const chatsArray = await getChat(chatIds);
-
-      socket.emit(SOCKET_HANDLERS.CONNECTION.ConnectionData, {
-        hasData: chatsArray.length > 0,
-        chats: chatsArray,
-        connections,
-      });
-      if (chatIds.length > 0) {
-        socket.join(chatIds.map((chatId) => chatId.toString()));
-      }
-      socket.join(`${loggedInUserId}-req`); //New Request Room
-
-      socket.on(SOCKET_HANDLERS.CONNECTION.StatusUpdate, (userId, { code, update_type }) => {
-        if (!code || !update_type) return;
-        if (socket.rooms.size > 2) {
-          const roomIds = new Set(socket.rooms);
-          roomIds.delete(`${loggedInUserId}-req`);
-          socket.to([...roomIds]).emit(SOCKET_HANDLERS.CONNECTION.StatusUpdate, userId, {
-            code,
-            lastActive: code === USER_STATUS.OFFLINE ? new Date().toISOString() : "",
-          });
-        }
-        updateStatus(userId, { code, update_type });
-      });
-
-      socket.on(SOCKET_HANDLERS.CHAT.AttachmentURL, async (chat_id: string, fileInfo: { name: string; size: number }[]) => {
-        if (chat_id && fileInfo.length > 0) {
-          const data = await provideSignedURL(chat_id, fileInfo);
-          socket.emit(SOCKET_HANDLERS.CHAT.AttachmentURL, data);
-        }
-      });
-      socket.on(SOCKET_HANDLERS.CHAT.NewRequest, async ({ receiverId, messageObject }) => {
-        const isBlocked = await isUserRestricted(loggedInUserId, receiverId);
-        if (isBlocked) {
-          socket.emit(SOCKET_HANDLERS.CHAT.NewRequest_Failed, "You can no longer message this contact");
-          return;
-        }
-        delete messageObject.tempId;
-
-        const { chat_id } = await addConnection(loggedInUserId, receiverId, messageObject);
-        socket.join(chat_id.toString());
-        if (chat_id) {
-          const [chats, [profile1, profile2], senderConnectionData, receiverConnectionData] = await Promise.all(
-            [
-              getChat([chat_id]),
-              getProfileById([loggedInUserId, receiverId]),
-              getConnectionData(loggedInUserId, receiverId),
-              getConnectionData(receiverId, loggedInUserId),
-            ].filter(Boolean),
-          );
-
-          socket.emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
-            chat: chats[0],
-            connectionProfile: {
-              ...(profile1.id.toString() === loggedInUserId ? profile2 : profile1),
-              ...senderConnectionData,
-            },
-          });
-          socket.to(`${receiverId}-req`).emit(SOCKET_HANDLERS.CHAT.NewRequest_Success, {
-            chat: chats[0],
-            connectionProfile: {
-              ...(profile1.id.toString() !== loggedInUserId ? profile2 : profile1),
-              ...receiverConnectionData,
-            },
-          });
-        }
-      });
-
-      socket.on(SOCKET_HANDLERS.CHAT.NewRequest_Accepted, async (chatId, fromId) => {
-        await acceptMessageRequest(chatId, fromId);
-        socket.to(chatId).emit(SOCKET_HANDLERS.CHAT.NewRequest_Accepted, chatId, fromId);
-      });
-
-      socket.on(SOCKET_HANDLERS.CHAT.JoinRoom, (chatId) => {
-        socket.join(chatId);
-      });
-
-      socket.on(SOCKET_HANDLERS.CHAT.LeaveRoom, (chat_id) => {
-        socket.leave(chat_id);
-      });
-
-      socket.on(SOCKET_HANDLERS.CHAT.TypingUpdate, (chat_id, author) => {
-        if (chat_id && author) {
-          socket.to(chat_id).emit(SOCKET_HANDLERS.CHAT.TypingUpdate, chat_id, author);
-          /*
-           * // TODO: It should be a throttling update from client.
-           * Because if the user is just logged in and one of it's connections was typing then it won't be send to the logged in user. Because typing update was sent before they were logged in
-           */
-          // if (author.isTyping) {
-          //   chatsCollection.updateOne(
-          //     { _id: new ObjectId(chat_id) },
-          //     { $addToSet: { authors_typing: new ObjectId(author.authorId) } }
-          //   );
-          // } else {
-          //   chatsCollection.updateOne(
-          //     { _id: new ObjectId(chat_id) },
-          //     { $pull: { authors_typing: new ObjectId(author.authorId) } }
-          //   );
-          // }
-        }
-      });
-      socket.on(SOCKET_HANDLERS.CHAT.LoadMore, async (chatId, { size = 50, dataCount = 0 }) => {
-        const data = await getMessages(chatId, dataCount, size);
-        socket.emit(SOCKET_HANDLERS.CHAT.MoreMessages, chatId, data);
-      });
-      socket.on(SOCKET_HANDLERS.CHAT.NewMessage, async ({ chat_id, receiverId, messageObject }) => {
-        const currentTime = new Date();
-        messageObject.timestamp = currentTime;
-        messageObject.seenByRecipients = [];
-        try {
-          const messageTempId = messageObject.tempId;
-          delete messageObject.tempId;
-          const data = await Promise.all([addMessage(chat_id, messageObject), updateUnseenMsgCount(messageObject.sender_id, receiverId)]);
-          io.to(chat_id).emit(SOCKET_HANDLERS.CHAT.NewMessage, chat_id, currentTime, { ...messageObject, id: data[0], tempId: messageTempId });
-        } catch (e) {
-          console.log("MessageTransferFailed:", e);
-          socket.emit(SOCKET_HANDLERS.CHAT.NewMessage_Failed, chat_id);
-        }
-      });
-
-      socket.on(
-        SOCKET_HANDLERS.CHAT.MESSAGE.Delete,
-        async (
-          { chatId, messageId, fromId, attachments }: { chatId: string; messageId: string; fromId: string; attachments: string[] },
-          forAll = false,
-        ) => {
-          await deleteMessage(chatId, messageId, fromId, forAll, attachments); //assetKey for attachment message
-          if (forAll) {
-            io.to(chatId).emit(SOCKET_HANDLERS.CHAT.MESSAGE.Delete, chatId, messageId);
-            console.log("SocketMsgSend", { chatId, messageId });
-          }
-        },
-      );
-
-      socket.on(SOCKET_HANDLERS.CHAT.MESSAGE.Edit, async (chat_id: string, messageId: string, update: MessageUpdate, fromId: string) => {
-        await updateMessage(chat_id, messageId, update, fromId);
-        io.to(chat_id).emit(SOCKET_HANDLERS.CHAT.MESSAGE.Edit, chat_id, messageId, update);
-      });
-
-      socket.on(SOCKET_HANDLERS.CHAT.SeenUpdate, async (chat_id: string, seenByUserId: string, toReceiverId: string, messageId: string) => {
-        const data = await Promise.all([
-          updateSeenMessages(chat_id, seenByUserId, messageId),
-          updateUnseenMsgCount(toReceiverId, seenByUserId, false),
-        ]);
-        socket.to(chat_id).emit(SOCKET_HANDLERS.CHAT.SeenUpdate, chat_id, seenByUserId, messageId);
-      });
-
-      socket.on(SOCKET_HANDLERS.CHAT.ClearAll, async ({ chatId, fromId, toId }) => {
-        await Promise.all([clearChatMessageCount(fromId, toId), emptyChatMessages(chatId), removeDirectory(`chat_${chatId}`)]);
-        socket.to(chatId).emit(SOCKET_HANDLERS.CHAT.ClearAll, chatId, fromId);
-      });
-
-      socket.on(SOCKET_HANDLERS.CONNECTION.RemoveConnection, async (chatId, { fromUserId, toUserId, toBlock }) => {
-        await Promise.all([deleteChatConnections(fromUserId, toUserId, toBlock), deleteChat(chatId), removeDirectory(`chat_${chatId}`)]);
-        socket.to(chatId).emit(SOCKET_HANDLERS.CONNECTION.RemoveConnection, fromUserId, chatId);
-        socket.leave(chatId);
-      });
-
-      // RTC Signaling Handlers
-
-      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.Offer, (chatId: string, desc) => {
-        socket.broadcast.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.Offer, desc);
-      });
-      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.Answer, (chatId: string, msg: object) => {
-        socket.broadcast.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.Answer, msg);
-      });
-      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.Candidate, (chatId: string, msg: object) => {
-        socket.broadcast.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.Candidate, msg);
-      });
-      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.End, (chatId: string) => {
-        socket.broadcast.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.End);
-      });
-      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.Reconnect, (chatId: string) => {
-        socket.broadcast.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.Reconnect);
-      });
-      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.Reconnect_RESP, (chatId: string, userId: string) => {
-        socket.broadcast.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.Reconnect_RESP, userId);
-      });
-      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.CallInitiator, (chatId: string, ...args) => {
-        socket.broadcast.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.CallInitiator, chatId, ...args);
-      });
-      socket.on(SOCKET_HANDLERS.RTC_SIGNALING.CallInitiator_RESP, (chatId: string, responseFromUserId: string) => {
-        socket.broadcast.to(chatId).emit(SOCKET_HANDLERS.RTC_SIGNALING.CallInitiator_RESP, responseFromUserId);
-      });
-
-      socket.on("disconnect", async (reason) => {
-        const rData = await getRData(socket.handshake.headers.authorization?.split(" ")[1] || "");
-        if (rData) {
-          const parsedD = await JSON.parse(rData);
-          socket
-            .to(socket.rooms as any)
-            .emit(SOCKET_HANDLERS.CONNECTION.StatusUpdate, (parsedD.id, { status: USER_STATUS.OFFLINE, last_active: new Date() }, reason));
-          updateStatus(parsedD.id, {
-            code: "OFFLINE",
-            update_type: "auto",
-          });
-        }
-      });
-    });
+    io.on("connection", socketHandlers);
     expressApp.use(cors(corsPolicy));
     expressApp.use(express.json());
     expressApp.use(express.raw({ limit: "1mb" }));
