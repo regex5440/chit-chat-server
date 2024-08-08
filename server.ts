@@ -14,6 +14,7 @@ import process from "process";
 import sendEmail from "@utils/mailer";
 import { mongoDbClient } from "@db/client";
 import socketHandlers from "@lib/socker.io/routes";
+import rClient from "@lib/redis";
 
 const corsPolicy: cors.CorsOptions | cors.CorsOptionsDelegate | undefined = {
   origin: process.env.Client_URL?.includes(",") ? process.env.Client_URL.split(",") : process.env.Client_URL,
@@ -93,7 +94,6 @@ try {
     });
   } else {
     const expressApp = express();
-    //TODO: Separate the socket.io server to a different file
     const server = createServer(expressApp);
     const io = new Server(server, {
       cors: corsPolicy,
@@ -134,6 +134,7 @@ try {
     mongoDbClient.connect().then(() => {
       console.log("Worker %d connected with db", process.pid);
     });
+    rClient.connect();
   }
 } catch (e) {
   console.error("ServerError:", e);
