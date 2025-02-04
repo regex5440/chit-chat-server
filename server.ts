@@ -52,42 +52,6 @@ try {
         });
       }
     });
-
-    let cannotWakeEmailSendCount = 0;
-    const x = setInterval(
-      //! PREVENT SERVER FROM SLEEPING (RENDER)
-      () => {
-        fetch("https://cc.api.hdxdev.in/dont_sleep")
-          .then((response: any) => {
-            if (response.status === 202) {
-              console.log("Prevented from sleep");
-            } else {
-              throw new Error("Not receiving response.Receiver" + response.text);
-            }
-          })
-          .catch((e) => {
-            if (cannotWakeEmailSendCount === 3) {
-              clearInterval(x);
-            }
-            cannotWakeEmailSendCount++;
-            if (process.env.EMAIL_ALERT_TO) {
-              sendEmail({
-                to: process.env.EMAIL_ALERT_TO,
-                subject: "Chit-Chat server is offline!",
-                html: `
-                <div style="margin:auto;width: fit-content;">
-                <h2 style="text-align:center; color: red;">Chit-Chat is down, Please check the deployment!</h2>
-                <div style="border:1px solid black; border-radius: 5px">Error:
-                <code>${JSON.stringify(e)}</code>
-                </div>
-                </div>`,
-              });
-            }
-            console.log("Cannot wake up", e);
-          });
-      },
-      1000 * 60 * 10,
-    );
     cluster.on("exit", (worker, code, signal) => {
       console.log(`Worker ${worker.process.pid} died.`);
       console.log(`Current Online: ${Object.keys(cluster.workers as object).length}`);
