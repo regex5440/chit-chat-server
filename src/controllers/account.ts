@@ -1,4 +1,4 @@
-import { ObjectId, UpdateFilter } from "mongodb";
+import { ObjectId, UpdateFilter, Document } from "mongodb";
 import db from "@db/client";
 import { ProfileDataProjection, ProfileSearchResults, UserProfileProjection } from "@db/schema/projections";
 import { USER_STATUS } from "@utils/enums";
@@ -135,29 +135,24 @@ async function updateOAuthProfile(userId: string, oauthEmail: string, service: "
 }
 
 async function findUser(query: string) {
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(escapeRegExp(query), "i");
+
   const users = await usersCollection
-    .aggregate([
+    .find(
       {
-        $search: {
-          index: "user-search-index",
-          text: {
-            query,
-            path: ["firstName", "lastName", "username"],
+        $and: [
+          { deleted: { $ne: true } },
+          {
+            $or: [{ firstName: { $regex: pattern } }, { lastName: { $regex: pattern } }, { username: { $regex: pattern } }],
           },
-          sort: {
-            firstName: 1,
-          },
-        },
+        ],
       },
       {
-        $match: {
-          deleted: { $ne: true },
-        },
+        projection: ProfileSearchResults,
+        limit: 10,
       },
-      {
-        $project: ProfileSearchResults,
-      },
-    ])
+    )
     .toArray();
   return users;
 }
@@ -355,7 +350,7 @@ async function deleteChatConnections(fromId: string, connectionId: string, toBlo
 }
 
 async function updateStatus(userId: string, { code, update_type }: { code: keyof typeof USER_STATUS; update_type: "auto" | "manual" }) {
-  const update: UpdateFilter<Document> | Partial<Document> = {
+  const update: UpdateFilter<Document> = {
     $set: {
       status: {
         code,
@@ -466,7 +461,7 @@ async function unblockUser(userId: string, blockedId: string) {
       $pull: {
         blocked_users: new ObjectId(blockedId),
       },
-    },
+    } as any,
   );
 }
 

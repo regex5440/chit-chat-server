@@ -89,13 +89,10 @@ async function createNewChat(creatorId: string, messageObject: MessageObject | n
 
 async function addMessage(chat_id: string, messageObject: MessageObject) {
   const id = new ObjectId();
-  await chatsCollection.updateOne(
-    { _id: new ObjectId(chat_id) },
-    {
-      $push: { messages: { ...messageObject, id } },
-      $set: { last_updated: messageObject.timestamp },
-    },
-  );
+  await chatsCollection.updateOne({ _id: new ObjectId(chat_id) }, {
+    $push: { messages: { ...messageObject, id } },
+    $set: { last_updated: messageObject.timestamp },
+  } as any);
   return id.toString();
 }
 async function updateSeenMessages(chat_id: string, seenById: string, messageId: string) {
@@ -121,7 +118,7 @@ async function acceptMessageRequest(chatId: string, accepterId: string) {
       $push: {
         participants: new ObjectId(accepterId),
       },
-    },
+    } as any,
   );
 }
 

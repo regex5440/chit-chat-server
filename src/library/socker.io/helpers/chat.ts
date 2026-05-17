@@ -21,8 +21,7 @@ import {
 } from "@controllers/chat";
 import { SOCKET_HANDLERS } from "@utils/enums";
 import { removeDirectory } from "@lib/cloudflare";
-import { Socket } from "socket.io";
-import { DefaultEventsMap } from "socket.io/dist/typed-events";
+import { DefaultEventsMap, Socket } from "socket.io";
 import { MessageObject, MessageUpdate } from "@types";
 
 export async function attachmentURLRequestHandler(socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {

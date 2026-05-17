@@ -2,8 +2,7 @@ import { getConnectionsData, updateStatus } from "@controllers/account";
 import { getChat } from "@controllers/chat";
 import { SOCKET_HANDLERS, USER_STATUS } from "@utils/enums";
 import { ObjectId } from "mongodb";
-import { Socket } from "socket.io";
-import { DefaultEventsMap } from "socket.io/dist/typed-events";
+import { DefaultEventsMap, Socket } from "socket.io";
 
 export async function initialSocketAction(socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>, loggedInUserId: string) {
   const connections = await getConnectionsData(loggedInUserId);

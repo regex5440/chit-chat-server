@@ -1,6 +1,6 @@
 import { config } from "dotenv";
 config();
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { setRData, getRData, removeRData } from "./redis";
 import { getProfileById } from "@controllers/account";
 
