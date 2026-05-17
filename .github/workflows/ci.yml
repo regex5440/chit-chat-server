@@ -9,14 +9,34 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v6
-
       - name: Generate image name
         id: image
         run: echo "IMAGE_NAME=harshdagar/chit-chat-server:$(date +%s)" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
         run: |
-          docker buildx build -t ${{ steps.image.outputs.IMAGE_NAME }} .
+          docker buildx build \
+            --build-arg Client_URL="${{ vars.CLIENT_URL }}" \
+            --build-arg DB_UserName="${{ vars.DB_USERNAME }}" \
+            --build-arg DB_PassWord="${{ secrets.DB_PASSWORD }}" \
+            --build-arg TOKEN_KEY="${{ secrets.TOKEN_KEY }}" \
+            --build-arg SIGNUP_TOKEN_KEY="${{ secrets.SIGNUP_TOKEN_KEY }}" \
+            --build-arg EMAIL_SERVICE_URL="${{ vars.EMAIL_SERVICE_URL }}" \
+            --build-arg EMAIL_SERVICE_TOKEN="${{ secrets.EMAIL_SERVICE_TOKEN }}" \
+            --build-arg AWS_Endpoint="${{ vars.AWS_ENDPOINT }}" \
+            --build-arg AWS_Access_KeyID="${{ secrets.AWS_ACCESS_KEYID }}" \
+            --build-arg AWS_SecretAccess_Key="${{ secrets.AWS_SECRETACCESS_KEY }}" \
+            --build-arg S3_ProfileData_Bucket="${{ vars.S3_PROFILEDATA_BUCKET }}" \
+            --build-arg S3_Assets_Bucket="${{ vars.S3_ASSETS_BUCKET }}" \
+            --build-arg OAuth_ID="${{ vars.OAUTH_ID }}" \
+            --build-arg OAuth_Key="${{ secrets.OAUTH_KEY }}" \
+            --build-arg Redis_Host="${{ vars.REDIS_HOST }}" \
+            --build-arg Redis_Password="${{ secrets.REDIS_PASSWORD }}" \
+            --build-arg Redis_Port="${{ vars.REDIS_PORT }}" \
+            --build-arg App_Logo="${{ vars.APP_LOGO }}" \
+            --build-arg WORKER_LIMIT="${{ vars.WORKER_LIMIT }}" \
+            --build-arg EMAIL_ALERT_TO="${{ vars.EMAIL_ALERT_TO }}" \
+            -t ${{ steps.image.outputs.IMAGE_NAME }} .
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
