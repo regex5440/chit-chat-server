@@ -20,6 +20,10 @@ route.get("/dont_sleep", (req, res) => {
   res.status(202).send("Ok, I won't");
 });
 
+route.get("/health", (req, res) => {
+  res.status(200).send("CC Server is healthy😎!");
+});
+
 route.post("/email_verifier", emailValidation);
 
 //After email verification, use this API
