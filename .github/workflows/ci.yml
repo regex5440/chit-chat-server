@@ -6,6 +6,27 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CLIENT_URL: ${{ vars.CLIENT_URL }}
+      DB_USERNAME: ${{ vars.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      TOKEN_KEY: ${{ secrets.TOKEN_KEY }}
+      SIGNUP_TOKEN_KEY: ${{ secrets.SIGNUP_TOKEN_KEY }}
+      EMAIL_SERVICE_URL: ${{ vars.EMAIL_SERVICE_URL }}
+      EMAIL_SERVICE_TOKEN: ${{ secrets.EMAIL_SERVICE_TOKEN }}
+      AWS_ENDPOINT: ${{ vars.AWS_ENDPOINT }}
+      AWS_ACCESS_KEYID: ${{ secrets.AWS_ACCESS_KEYID }}
+      AWS_SECRETACCESS_KEY: ${{ secrets.AWS_SECRETACCESS_KEY }}
+      S3_PROFILEDATA_BUCKET: ${{ vars.S3_PROFILEDATA_BUCKET }}
+      S3_ASSETS_BUCKET: ${{ vars.S3_ASSETS_BUCKET }}
+      OAUTH_ID: ${{ vars.OAUTH_ID }}
+      OAUTH_KEY: ${{ secrets.OAUTH_KEY }}
+      REDIS_HOST: ${{ vars.REDIS_HOST }}
+      REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+      REDIS_PORT: ${{ vars.REDIS_PORT }}
+      APP_LOGO: ${{ vars.APP_LOGO }}
+      WORKER_LIMIT: ${{ vars.WORKER_LIMIT }}
+      EMAIL_ALERT_TO: ${{ vars.EMAIL_ALERT_TO }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v6
@@ -16,26 +37,26 @@ jobs:
       - name: Build Docker image
         run: |
           docker buildx build \
-            --build-arg Client_URL="${{ vars.CLIENT_URL }}" \
-            --build-arg DB_UserName="${{ vars.DB_USERNAME }}" \
-            --build-arg DB_PassWord="${{ secrets.DB_PASSWORD }}" \
-            --build-arg TOKEN_KEY="${{ secrets.TOKEN_KEY }}" \
-            --build-arg SIGNUP_TOKEN_KEY="${{ secrets.SIGNUP_TOKEN_KEY }}" \
-            --build-arg EMAIL_SERVICE_URL="${{ vars.EMAIL_SERVICE_URL }}" \
-            --build-arg EMAIL_SERVICE_TOKEN="${{ secrets.EMAIL_SERVICE_TOKEN }}" \
-            --build-arg AWS_Endpoint="${{ vars.AWS_ENDPOINT }}" \
-            --build-arg AWS_Access_KeyID="${{ secrets.AWS_ACCESS_KEYID }}" \
-            --build-arg AWS_SecretAccess_Key="${{ secrets.AWS_SECRETACCESS_KEY }}" \
-            --build-arg S3_ProfileData_Bucket="${{ vars.S3_PROFILEDATA_BUCKET }}" \
-            --build-arg S3_Assets_Bucket="${{ vars.S3_ASSETS_BUCKET }}" \
-            --build-arg OAuth_ID="${{ vars.OAUTH_ID }}" \
-            --build-arg OAuth_Key="${{ secrets.OAUTH_KEY }}" \
-            --build-arg Redis_Host="${{ vars.REDIS_HOST }}" \
-            --build-arg Redis_Password="${{ secrets.REDIS_PASSWORD }}" \
-            --build-arg Redis_Port="${{ vars.REDIS_PORT }}" \
-            --build-arg App_Logo="${{ vars.APP_LOGO }}" \
-            --build-arg WORKER_LIMIT="${{ vars.WORKER_LIMIT }}" \
-            --build-arg EMAIL_ALERT_TO="${{ vars.EMAIL_ALERT_TO }}" \
+            --build-arg Client_URL="$CLIENT_URL" \
+            --build-arg DB_UserName="$DB_USERNAME" \
+            --build-arg DB_PassWord="$DB_PASSWORD" \
+            --build-arg TOKEN_KEY="$TOKEN_KEY" \
+            --build-arg SIGNUP_TOKEN_KEY="$SIGNUP_TOKEN_KEY" \
+            --build-arg EMAIL_SERVICE_URL="$EMAIL_SERVICE_URL" \
+            --build-arg EMAIL_SERVICE_TOKEN="$EMAIL_SERVICE_TOKEN" \
+            --build-arg AWS_Endpoint="$AWS_ENDPOINT" \
+            --build-arg AWS_Access_KeyID="$AWS_ACCESS_KEYID" \
+            --build-arg AWS_SecretAccess_Key="$AWS_SECRETACCESS_KEY" \
+            --build-arg S3_ProfileData_Bucket="$S3_PROFILEDATA_BUCKET" \
+            --build-arg S3_Assets_Bucket="$S3_ASSETS_BUCKET" \
+            --build-arg OAuth_ID="$OAUTH_ID" \
+            --build-arg OAuth_Key="$OAUTH_KEY" \
+            --build-arg Redis_Host="$REDIS_HOST" \
+            --build-arg Redis_Password="$REDIS_PASSWORD" \
+            --build-arg Redis_Port="$REDIS_PORT" \
+            --build-arg App_Logo="$APP_LOGO" \
+            --build-arg WORKER_LIMIT="$WORKER_LIMIT" \
+            --build-arg EMAIL_ALERT_TO="$EMAIL_ALERT_TO" \
             -t ${{ steps.image.outputs.IMAGE_NAME }} .
 
       - name: Log in to Docker Hub
