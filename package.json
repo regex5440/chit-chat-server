@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Mock server for chit-chat app",
   "main": "build/server.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && esbuild server.ts --bundle --platform=node --outdir=build --minify",
