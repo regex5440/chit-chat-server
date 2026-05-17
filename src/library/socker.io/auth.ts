@@ -1,6 +1,5 @@
-import { Socket } from "socket.io";
+import { DefaultEventsMap, Socket } from "socket.io";
 import { validateToken } from "../jwt";
-import { DefaultEventsMap } from "socket.io/dist/typed-events";
 
 export default async function authenticateSocket(socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {
   //TODO: Optimize Authorization if possible

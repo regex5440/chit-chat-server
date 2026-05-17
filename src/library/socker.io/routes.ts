@@ -14,8 +14,7 @@ import {
 } from "./helpers/chat";
 import { initialSocketAction, statusUpdateHandler } from "./helpers/connection";
 import { updateStatus } from "@controllers/account";
-import { Socket } from "socket.io";
-import { DefaultEventsMap } from "socket.io/dist/typed-events";
+import { DefaultEventsMap, Socket } from "socket.io";
 
 export default async function socketHandlers(socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {
   // socket.onAny((event, ...rest) => {

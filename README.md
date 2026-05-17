@@ -1,6 +1,6 @@
 # Chit-Chat Server
 
-> BackEnd server for Chit-Chat messaging app. Refer: https://github.com/regex5440/chit-chat
+> BackEnd server for Chit-Chat messaging app. Refer: <https://github.com/regex5440/chit-chat>
 
 ## BackEnd Stack
 
@@ -11,7 +11,7 @@
 
 ## Node Version
 
-> \>= `v18.14.0`
+> \>= `v24.13.1`
 
 ## Environment
 
@@ -43,10 +43,12 @@ EMAIL_ALERT_TO=<Optional email address to send updates for service down>
 ## Available Script
 
 ### Development
+
 `npm start`
 > Start the server using nodemon and watch for changes
 
 ### Production
+
 `npm run build`
 > Build to ./build directory
 

@@ -1,6 +1,5 @@
 import { SOCKET_HANDLERS } from "@utils/enums";
-import { Socket } from "socket.io";
-import { DefaultEventsMap } from "socket.io/dist/typed-events";
+import { DefaultEventsMap, Socket } from "socket.io";
 
 export default async function RTCSignalingHandler(socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {
   socket.on(SOCKET_HANDLERS.RTC_SIGNALING.Offer, (chatId: string, desc) => {
