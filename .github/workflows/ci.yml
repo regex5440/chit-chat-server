@@ -9,13 +9,13 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@v6
-      - name: Generate image name
-        id: image
-        run: echo "IMAGE_NAME=harshdagar/chit-chat-server:$(date +%s)" >> $GITHUB_OUTPUT
+      #   - name: Generate image name
+      #     id: image
+      #     run: echo "IMAGE_NAME=harshdagar/chit-chat-server:$(date +%s)" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
         run: |
-          docker buildx build -t ${{ steps.image.outputs.IMAGE_NAME }} .
+          docker buildx build -t harshdagar/chit-chat-server:latest .
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
@@ -24,4 +24,4 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Push Docker image
-        run: docker push ${{ steps.image.outputs.IMAGE_NAME }}
+        run: docker push harshdagar/chit-chat-server:latest
