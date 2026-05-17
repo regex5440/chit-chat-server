@@ -135,29 +135,24 @@ async function updateOAuthProfile(userId: string, oauthEmail: string, service: "
 }
 
 async function findUser(query: string) {
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(escapeRegExp(query), "i");
+
   const users = await usersCollection
-    .aggregate([
+    .find(
       {
-        $search: {
-          index: "user-search-index",
-          text: {
-            query,
-            path: ["firstName", "lastName", "username"],
+        $and: [
+          { deleted: { $ne: true } },
+          {
+            $or: [{ firstName: { $regex: pattern } }, { lastName: { $regex: pattern } }, { username: { $regex: pattern } }],
           },
-          sort: {
-            firstName: 1,
-          },
-        },
+        ],
       },
       {
-        $match: {
-          deleted: { $ne: true },
-        },
+        projection: ProfileSearchResults,
+        limit: 10,
       },
-      {
-        $project: ProfileSearchResults,
-      },
-    ])
+    )
     .toArray();
   return users;
 }
