@@ -6,6 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: Development
     env:
       CLIENT_URL: ${{ vars.CLIENT_URL }}
       DB_USERNAME: ${{ vars.DB_USERNAME }}
